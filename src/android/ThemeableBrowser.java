@@ -667,9 +667,11 @@ public class ThemeableBrowser extends CordovaPlugin {
                     "close button",
                     new View.OnClickListener() {
                         public void onClick(View v) {
-                            emitButtonEvent(
+                            if (inAppWebView != null) {
+                                emitButtonEvent(
                                     features.closeButton,
                                     inAppWebView.getUrl());
+                            }
                             closeDialog();
                         }
                     }
