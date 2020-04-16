@@ -848,9 +848,9 @@ BOOL isExiting = FALSE;
       self.toolbar.translucent = NO;
     }
     
-    CGFloat labelInset = 5.0;
+    CGFloat labelInset = 2.0;
     float locationBarY = toolbarIsAtBottom ? self.view.bounds.size.height - FOOTER_HEIGHT : self.view.bounds.size.height - LOCATIONBAR_HEIGHT;
-    
+
     self.addressLabel = [[UILabel alloc] initWithFrame:CGRectMake(labelInset, locationBarY, self.view.bounds.size.width - labelInset, LOCATIONBAR_HEIGHT)];
     self.addressLabel.adjustsFontSizeToFitWidth = NO;
     self.addressLabel.alpha = 1.000;
@@ -864,13 +864,13 @@ BOOL isExiting = FALSE;
     self.addressLabel.enabled = YES;
     self.addressLabel.hidden = NO;
     self.addressLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-    
+
     if ([self.addressLabel respondsToSelector:NSSelectorFromString(@"setMinimumScaleFactor:")]) {
         [self.addressLabel setValue:@(10.0/[UIFont labelFontSize]) forKey:@"minimumScaleFactor"];
     } else if ([self.addressLabel respondsToSelector:NSSelectorFromString(@"setMinimumFontSize:")]) {
         [self.addressLabel setValue:@(10.0) forKey:@"minimumFontSize"];
     }
-    
+
     self.addressLabel.multipleTouchEnabled = NO;
     self.addressLabel.numberOfLines = 1;
     self.addressLabel.opaque = NO;
@@ -879,8 +879,8 @@ BOOL isExiting = FALSE;
     self.addressLabel.textAlignment = NSTextAlignmentLeft;
     self.addressLabel.textColor = [UIColor colorWithWhite:1.000 alpha:1.000];
     self.addressLabel.userInteractionEnabled = NO;
-    
-    NSString* frontArrowString = NSLocalizedString(@"►", nil); // create arrow from Unicode char
+
+    NSString* frontArrowString = NSLocalizedString(@"›", nil); // create arrow from Unicode char
     self.forwardButton = [[UIBarButtonItem alloc] initWithTitle:frontArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goForward:)];
     self.forwardButton.enabled = YES;
     self.forwardButton.imageInsets = UIEdgeInsetsZero;
@@ -888,7 +888,7 @@ BOOL isExiting = FALSE;
       self.forwardButton.tintColor = [self colorFromHexString:_browserOptions.navigationbuttoncolor];
     }
 
-    NSString* backArrowString = NSLocalizedString(@"◄", nil); // create arrow from Unicode char
+    NSString* backArrowString = NSLocalizedString(@"‹", nil); // create arrow from Unicode char
     self.backButton = [[UIBarButtonItem alloc] initWithTitle:backArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
     self.backButton.enabled = YES;
     self.backButton.imageInsets = UIEdgeInsetsZero;
@@ -908,8 +908,9 @@ BOOL isExiting = FALSE;
     } else {
         [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
     }
-    
-    self.view.backgroundColor = [UIColor grayColor];
+
+    // TODO self.view.backgroundColor = [UIColor grayColor];
+    self.view.backgroundColor = [UIColor clearColor];
     [self.view addSubview:self.toolbar];
     [self.view addSubview:self.addressLabel];
     [self.view addSubview:self.spinner];
@@ -930,7 +931,7 @@ BOOL isExiting = FALSE;
     self.closeButton.enabled = YES;
     // If color on closebutton is requested then initialize with that that color, otherwise use initialize with default
     self.closeButton.tintColor = colorString != nil ? [self colorFromHexString:colorString] : [UIColor colorWithRed:60.0 / 255.0 green:136.0 / 255.0 blue:230.0 / 255.0 alpha:1];
-    
+
     NSMutableArray* items = [self.toolbar.items mutableCopy];
     [items replaceObjectAtIndex:buttonIndex withObject:self.closeButton];
     [self.toolbar setItems:items];
@@ -939,43 +940,43 @@ BOOL isExiting = FALSE;
 - (void)showLocationBar:(BOOL)show
 {
     CGRect locationbarFrame = self.addressLabel.frame;
-    
+
     BOOL toolbarVisible = !self.toolbar.hidden;
-    
+
     // prevent double show/hide
     if (show == !(self.addressLabel.hidden)) {
         return;
     }
-    
+
     if (show) {
         self.addressLabel.hidden = NO;
-        
+
         if (toolbarVisible) {
             // toolBar at the bottom, leave as is
             // put locationBar on top of the toolBar
-            
+
             CGRect webViewBounds = self.view.bounds;
             webViewBounds.size.height -= FOOTER_HEIGHT;
             [self setWebViewFrame:webViewBounds];
-            
+
             locationbarFrame.origin.y = webViewBounds.size.height;
             self.addressLabel.frame = locationbarFrame;
         } else {
             // no toolBar, so put locationBar at the bottom
-            
+
             CGRect webViewBounds = self.view.bounds;
             webViewBounds.size.height -= LOCATIONBAR_HEIGHT;
             [self setWebViewFrame:webViewBounds];
-            
+
             locationbarFrame.origin.y = webViewBounds.size.height;
             self.addressLabel.frame = locationbarFrame;
         }
     } else {
         self.addressLabel.hidden = YES;
-        
+
         if (toolbarVisible) {
             // locationBar is on top of toolBar, hide locationBar
-            
+
             // webView take up whole height less toolBar height
             CGRect webViewBounds = self.view.bounds;
             webViewBounds.size.height -= TOOLBAR_HEIGHT;
@@ -991,18 +992,18 @@ BOOL isExiting = FALSE;
 {
     CGRect toolbarFrame = self.toolbar.frame;
     CGRect locationbarFrame = self.addressLabel.frame;
-    
+
     BOOL locationbarVisible = !self.addressLabel.hidden;
-    
+
     // prevent double show/hide
     if (show == !(self.toolbar.hidden)) {
         return;
     }
-    
+
     if (show) {
         self.toolbar.hidden = NO;
         CGRect webViewBounds = self.view.bounds;
-        
+
         if (locationbarVisible) {
             // locationBar at the bottom, move locationBar up
             // put toolBar at the bottom
@@ -1016,7 +1017,7 @@ BOOL isExiting = FALSE;
             webViewBounds.size.height -= TOOLBAR_HEIGHT;
             self.toolbar.frame = toolbarFrame;
         }
-        
+
         if ([toolbarPosition isEqualToString:kInAppBrowserToolbarBarPositionTop]) {
             toolbarFrame.origin.y = 0;
             webViewBounds.origin.y += toolbarFrame.size.height;
@@ -1025,19 +1026,19 @@ BOOL isExiting = FALSE;
             toolbarFrame.origin.y = (webViewBounds.size.height + LOCATIONBAR_HEIGHT);
         }
         [self setWebViewFrame:webViewBounds];
-        
+
     } else {
         self.toolbar.hidden = YES;
-        
+
         if (locationbarVisible) {
             // locationBar is on top of toolBar, hide toolBar
             // put locationBar at the bottom
-            
+
             // webView take up whole height less locationBar height
             CGRect webViewBounds = self.view.bounds;
             webViewBounds.size.height -= LOCATIONBAR_HEIGHT;
             [self setWebViewFrame:webViewBounds];
-            
+
             // move locationBar down
             locationbarFrame.origin.y = webViewBounds.size.height;
             self.addressLabel.frame = locationbarFrame;
@@ -1076,9 +1077,9 @@ BOOL isExiting = FALSE;
 {
     [CDVUserAgentUtil releaseLock:&_userAgentLockToken];
     self.currentURL = nil;
-    
+
     __weak UIViewController* weakSelf = self;
-    
+
     // Run later to avoid the "took a long time" log message.
     dispatch_async(dispatch_get_main_queue(), ^{
         isExiting = TRUE;
@@ -1093,7 +1094,7 @@ BOOL isExiting = FALSE;
 - (void)navigateTo:(NSURL*)url
 {
     NSURLRequest* request = [NSURLRequest requestWithURL:url];
-    
+
     if (_userAgentLockToken != 0) {
         [self.webView loadRequest:request];
     } else {
@@ -1121,13 +1122,21 @@ BOOL isExiting = FALSE;
     if (IsAtLeastiOSVersion(@"7.0") && !viewRenderedAtLeastOnce) {
         viewRenderedAtLeastOnce = TRUE;
         CGRect viewBounds = [self.webView bounds];
-        viewBounds.origin.y = STATUSBAR_HEIGHT;
-        viewBounds.size.height = viewBounds.size.height - STATUSBAR_HEIGHT;
+        // TODO viewBounds.origin.y = STATUSBAR_HEIGHT;
+        // TODO viewBounds.size.height = viewBounds.size.height - STATUSBAR_HEIGHT;
+        CGRect statusBarFrame = [UIApplication sharedApplication].statusBarFrame;
+		CGFloat statusBarHeight = statusBarFrame.size.height;
+		viewBounds.origin.y = statusBarHeight;
+		viewBounds.size.height = viewBounds.size.height - statusBarHeight;
+		// TODO end
+
+
+
         self.webView.frame = viewBounds;
         [[UIApplication sharedApplication] setStatusBarStyle:[self preferredStatusBarStyle]];
     }
     [self rePositionViews];
-    
+
     [super viewWillAppear:animated];
 }
 
@@ -1143,8 +1152,14 @@ BOOL isExiting = FALSE;
 }
 
 - (void) rePositionViews {
-    if ([_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop]) {
-        [self.webView setFrame:CGRectMake(self.webView.frame.origin.x, TOOLBAR_HEIGHT, self.webView.frame.size.width, self.webView.frame.size.height)];
+//    todo if ([_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop]) {
+//    todo     [self.webView setFrame:CGRectMake(self.webView.frame.origin.x, TOOLBAR_HEIGHT, self.webView.frame.size.width, self.webView.frame.size.height)];
+if ((_browserOptions.toolbar) && ([_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop])) {
+        CGRect statusBarFrame = [UIApplication sharedApplication].statusBarFrame;
+        CGFloat statusBarHeight = statusBarFrame.size.height;
+
+        [self.webView setFrame:CGRectMake(self.webView.frame.origin.x, TOOLBAR_HEIGHT + [self getStatusBarOffset], self.webView.frame.size.width, self.webView.frame.size.height - [self getStatusBarOffset] + statusBarHeight)];
+        // TODO end
         [self.toolbar setFrame:CGRectMake(self.toolbar.frame.origin.x, [self getStatusBarOffset], self.toolbar.frame.size.width, self.toolbar.frame.size.height)];
     }
 }
