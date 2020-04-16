@@ -1,41 +1,61 @@
 {
-  "name": "cordova-plugin-themeablebrowser",
-  "version": "0.2.17",
-  "description": "Cordova ThemeableBrowser Plugin",
+  "name": "cordova-plugin-inappbrowser",
+  "version": "3.2.0",
+  "description": "Cordova InAppBrowser Plugin",
+  "types": "./types/index.d.ts",
   "cordova": {
-    "id": "cordova-plugin-themeablebrowser",
+    "id": "cordova-plugin-inappbrowser",
     "platforms": [
       "android",
-      "amazon-fireos",
-      "ubuntu",
+      "browser",
       "ios",
-      "wp7",
-      "wp8",
-      "windows8",
-      "windows",
-      "firefoxos"
+      "osx",
+      "windows"
     ]
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/initialxy/cordova-plugin-themeablebrowser"
+    "url": "https://github.com/apache/cordova-plugin-inappbrowser"
+  },
+  "bugs": {
+    "url": "https://github.com/apache/cordova-plugin-inappbrowser/issues"
   },
   "keywords": [
     "cordova",
     "in",
     "app",
     "browser",
-    "themeablebrowser",
+    "inappbrowser",
     "ecosystem:cordova",
     "cordova-android",
-    "cordova-ios"
+    "cordova-browser",
+    "cordova-ios",
+    "cordova-osx",
+    "cordova-windows"
   ],
-  "engines": [
-    {
-      "name": "cordova",
-      "version": ">=3.1.0"
+  "scripts": {
+    "test": "npm run eslint",
+    "eslint": "node node_modules/eslint/bin/eslint www && node node_modules/eslint/bin/eslint src && node node_modules/eslint/bin/eslint tests"
+  },
+  "engines": {
+    "cordovaDependencies": {
+      "0.2.3": {
+        "cordova": ">=3.1.0"
+      },
+      "4.0.0": {
+        "cordova": ">100"
+      }
     }
-  ],
+  },
   "author": "Apache Software Foundation",
-  "license": "Apache 2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "eslint": "^4.0.0",
+    "eslint-config-semistandard": "^11.0.0",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.3.0",
+    "eslint-plugin-node": "^5.0.0",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-standard": "^3.0.1"
+  }
 }

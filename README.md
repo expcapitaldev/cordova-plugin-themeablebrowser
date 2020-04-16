@@ -1,378 +1,717 @@
-<!---
-    Licensed to the Apache Software Foundation (ASF) under one
-    or more contributor license agreements.  See the NOTICE file
-    distributed with this work for additional information
-    regarding copyright ownership.  The ASF licenses this file
-    to you under the Apache License, Version 2.0 (the
-    "License"); you may not use this file except in compliance
-    with the License.  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing,
-    software distributed under the License is distributed on an
-    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-    KIND, either express or implied.  See the License for the
-    specific language governing permissions and limitations
-    under the License.
+---
+title: Inappbrowser
+description: Open an in-app browser window.
+---
+<!--
+# license: Licensed to the Apache Software Foundation (ASF) under one
+#         or more contributor license agreements.  See the NOTICE file
+#         distributed with this work for additional information
+#         regarding copyright ownership.  The ASF licenses this file
+#         to you under the Apache License, Version 2.0 (the
+#         "License"); you may not use this file except in compliance
+#         with the License.  You may obtain a copy of the License at
+#
+#           http://www.apache.org/licenses/LICENSE-2.0
+#
+#         Unless required by applicable law or agreed to in writing,
+#         software distributed under the License is distributed on an
+#         "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+#         KIND, either express or implied.  See the License for the
+#         specific language governing permissions and limitations
+#         under the License.
 -->
 
-cordova-plugin-themeablebrowser
-===============================
+|AppVeyor|Travis CI|
+|:-:|:-:|
+|[![Build status](https://ci.appveyor.com/api/projects/status/github/apache/cordova-plugin-inappbrowser?branch=master)](https://ci.appveyor.com/project/ApacheSoftwareFoundation/cordova-plugin-inappbrowser)|[![Build Status](https://travis-ci.org/apache/cordova-plugin-inappbrowser.svg?branch=master)](https://travis-ci.org/apache/cordova-plugin-inappbrowser)|
 
-This plugin is a fork of [org.apache.cordova.inappbrowser](https://github.com/apache/cordova-plugin-inappbrowser). It attempts to retain most of the features of the InAppBrowser. In fact, for the full list of features inherited from InAppBrowser, please refer to [InAppBrowser's documentation](https://github.com/apache/cordova-plugin-inappbrowser/blob/master/README.md).
+# cordova-plugin-inappbrowser
 
-The purpose of this plugin is to provide an in-app-browser that can also be configured to match the theme of your app, in order to give it a more immersive look and feel for your app, as well as provide a more consistent look and feel across platforms.
+You can show helpful articles, videos, and web resources inside of your app. Users can view web pages without leaving your app.
 
-This plugin launches an in-app web view on top the existing [CordovaWebView](https://github.com/apache/cordova-android/blob/master/framework/src/org/apache/cordova/CordovaWebView.java) by calling `cordova.ThemeableBrowser.open()`.
+> To get a few ideas, check out the [sample](#sample) at the bottom of this page or go straight to the [reference](#reference) content.
 
-    // Keep in mind that you must add your own images to native resource.
-    // Images below are for sample only. They are not imported by this plugin.
-    cordova.ThemeableBrowser.open('http://apache.org', '_blank', {
-        statusbar: {
-            color: '#ffffffff'
-        },
-        toolbar: {
-            height: 44,
-            color: '#f0f0f0ff'
-        },
-        title: {
-            color: '#003264ff',
-            showPageTitle: true
-        },
-        backButton: {
-            image: 'back',
-            imagePressed: 'back_pressed',
-            align: 'left',
-            event: 'backPressed'
-        },
-        forwardButton: {
-            image: 'forward',
-            imagePressed: 'forward_pressed',
-            align: 'left',
-            event: 'forwardPressed'
-        },
-        closeButton: {
-            image: 'close',
-            imagePressed: 'close_pressed',
-            align: 'left',
-            event: 'closePressed'
-        },
-        customButtons: [
-            {
-                image: 'share',
-                imagePressed: 'share_pressed',
-                align: 'right',
-                event: 'sharePressed'
-            }
-        ],
-        menu: {
-            image: 'menu',
-            imagePressed: 'menu_pressed',
-            title: 'Test',
-            cancel: 'Cancel',
-            align: 'right',
-            items: [
-                {
-                    event: 'helloPressed',
-                    label: 'Hello World!'
-                },
-                {
-                    event: 'testPressed',
-                    label: 'Test!'
-                }
-            ]
-        },
-        backButtonCanClose: true
-    }).addEventListener('backPressed', function(e) {
-        alert('back pressed');
-    }).addEventListener('helloPressed', function(e) {
-        alert('hello pressed');
-    }).addEventListener('sharePressed', function(e) {
-        alert(e.url);
-    }).addEventListener(cordova.ThemeableBrowser.EVT_ERR, function(e) {
-        console.error(e.message);
-    }).addEventListener(cordova.ThemeableBrowser.EVT_WRN, function(e) {
-        console.log(e.message);
+This plugin provides a web browser view that displays when calling `cordova.InAppBrowser.open()`.
+
+    var ref = cordova.InAppBrowser.open('http://apache.org', '_blank', 'location=yes');
+
+### `window.open`
+
+The `cordova.InAppBrowser.open()` function is defined to be a drop-in replacement
+for the `window.open()` function.  Existing `window.open()` calls can use the
+InAppBrowser window, by replacing window.open:
+
+    window.open = cordova.InAppBrowser.open;
+
+The InAppBrowser window behaves like a standard web browser,
+and can't access Cordova APIs. For this reason, the InAppBrowser is recommended
+if you need to load third-party (untrusted) content, instead of loading that
+into the main Cordova webview. The InAppBrowser is not subject to the
+whitelist, nor is opening links in the system browser.
+
+The InAppBrowser provides by default its own GUI controls for the user (back,
+forward, done).
+
+For backwards compatibility, this plugin also hooks `window.open`.
+However, the plugin-installed hook of `window.open` can have unintended side
+effects (especially if this plugin is included only as a dependency of another
+plugin).  The hook of `window.open` will be removed in a future major release.
+Until the hook is removed from the plugin, apps can manually restore the default
+behaviour:
+
+    delete window.open // Reverts the call back to its prototype's default
+
+Although `window.open` is in the global scope, InAppBrowser is not available until after the `deviceready` event.
+
+    document.addEventListener("deviceready", onDeviceReady, false);
+    function onDeviceReady() {
+        console.log("window.open works well");
+    }
+
+## Installation
+
+    cordova plugin add cordova-plugin-inappbrowser
+
+If you want all page loads in your app to go through the InAppBrowser, you can
+simply hook `window.open` during initialization.  For example:
+
+    document.addEventListener("deviceready", onDeviceReady, false);
+    function onDeviceReady() {
+        window.open = cordova.InAppBrowser.open;
+    }
+
+## cordova.InAppBrowser.open
+
+Opens a URL in a new `InAppBrowser` instance, the current browser
+instance, or the system browser.
+
+    var ref = cordova.InAppBrowser.open(url, target, options);
+
+- __ref__: Reference to the `InAppBrowser` window when the target is set to `'_blank'`. _(InAppBrowser)_
+
+- __url__: The URL to load _(String)_. Call `encodeURI()` on this if the URL contains Unicode characters.
+
+- __target__: The target in which to load the URL, an optional parameter that defaults to `_self`. _(String)_
+
+    - `_self`: Opens in the Cordova WebView if the URL is in the white list, otherwise it opens in the `InAppBrowser`.
+    - `_blank`: Opens in the `InAppBrowser`.
+    - `_system`: Opens in the system's web browser.
+
+- __options__: Options for the `InAppBrowser`. Optional, defaulting to: `location=yes`. _(String)_
+
+    The `options` string must not contain any blank space, and each feature's name/value pairs must be separated by a comma. Feature names are case insensitive.
+
+    All platforms support:
+
+    - __location__: Set to `yes` or `no` to turn the `InAppBrowser`'s location bar on or off.
+
+    Android supports these additional options:
+
+    - __hidden__: set to `yes` to create the browser and load the page, but not show it. The loadstop event fires when loading is complete. Omit or set to `no` (default) to have the browser open and load normally.
+    - __beforeload__: set to enable the `beforeload` event to modify which pages are actually loaded in the browser. Accepted values are `get` to intercept only GET requests, `post` to intercept on POST requests or `yes` to intercept both GET & POST requests. Note that POST requests are not currently supported and will be ignored (if you set `beforeload=post` it will raise an error).
+    - __clearcache__: set to `yes` to have the browser's cookie cache cleared before the new window is opened
+    - __clearsessioncache__: set to `yes` to have the session cookie cache cleared before the new window is opened
+    - __closebuttoncaption__: set to a string to use as the close button's caption instead of a X. Note that you need to localize this value yourself.
+    - __closebuttoncolor__: set to a valid hex color string, for example: `#00ff00`, and it will change the
+    close button color from default, regardless of being a text or default X. Only has effect if user has location set to `yes`.
+    - __footer__: set to `yes` to show a close button in the footer similar to the iOS __Done__ button. 
+    The close button will appear the same as for the header hence use __closebuttoncaption__ and __closebuttoncolor__ to set its properties.
+    - __footercolor__: set to a valid hex color string, for example `#00ff00` or `#CC00ff00` (`#aarrggbb`) , and it will change the footer color from default.
+    Only has effect if user has __footer__ set to `yes`.
+    - __hardwareback__: set to `yes` to use the hardware back button to navigate backwards through the `InAppBrowser`'s history. If there is no previous page, the `InAppBrowser` will close.  The default value is `yes`, so you must set it to `no` if you want the back button to simply close the InAppBrowser.
+    - __hidenavigationbuttons__: set to `yes` to hide the navigation buttons on the location toolbar, only has effect if user has location set to `yes`. The default value is `no`.
+    - __hideurlbar__: set to `yes` to hide the url bar on the location toolbar, only has effect if user has location set to `yes`. The default value is `no`.
+    - __navigationbuttoncolor__: set to a valid hex color string, for example: `#00ff00`, and it will change the color of both navigation buttons from default. Only has effect if user has location set to `yes` and not hidenavigationbuttons set to `yes`.
+    - __toolbarcolor__: set to a valid hex color string, for example: `#00ff00`, and it will change the color the toolbar from default. Only has effect if user has location set to `yes`.
+    - __lefttoright__: Set to `yes` to swap positions of the navigation buttons and the close button. Specifically, navigation buttons go to the left and close button to the right.
+    - __zoom__: set to `yes` to show Android browser's zoom controls, set to `no` to hide them.  Default value is `yes`.
+    - __mediaPlaybackRequiresUserAction__: Set to `yes` to prevent HTML5 audio or video from autoplaying (defaults to `no`).
+    - __shouldPauseOnSuspend__: Set to `yes` to make InAppBrowser WebView to pause/resume with the app to stop background audio (this may be required to avoid Google Play issues like described in [CB-11013](https://issues.apache.org/jira/browse/CB-11013)).
+    - __useWideViewPort__: Sets whether the WebView should enable support for the "viewport" HTML meta tag or should use a wide viewport. When the value of the setting is `no`, the layout width is always set to the width of the WebView control in device-independent (CSS) pixels. When the value is `yes` and the page contains the viewport meta tag, the value of the width specified in the tag is used. If the page does not contain the tag or does not provide a width, then a wide viewport will be used. (defaults to `yes`).
+
+    iOS supports these additional options:
+
+    - __usewkwebview__: set to `yes` to use WKWebView engine for the InappBrowser. Omit or set to `no` (default) to use UIWebView. Note: Using `usewkwebview=yes` requires that a WKWebView engine plugin be installed in the Cordova project (e.g. [cordova-plugin-wkwebview-engine](https://github.com/apache/cordova-plugin-wkwebview-engine) or [cordova-plugin-ionic-webview](https://github.com/ionic-team/cordova-plugin-ionic-webview)).
+    - __hidden__: set to `yes` to create the browser and load the page, but not show it. The loadstop event fires when loading is complete. Omit or set to `no` (default) to have the browser open and load normally.
+    - __beforeload__: set to enable the `beforeload` event to modify which pages are actually loaded in the browser. Accepted values are `get` to intercept only GET requests, `post` to intercept on POST requests or `yes` to intercept both GET & POST requests. Note that POST requests are not currently supported and will be ignored (if you set `beforeload=post` it will raise an error).
+    - __clearcache__: set to `yes` to have the browser's cookie cache cleared before the new window is opened
+    - __clearsessioncache__: set to `yes` to have the session cookie cache cleared before the new window is opened. For WKWebView, requires iOS 11+ on target device.
+    - __cleardata__: set to `yes` to have the browser's entire local storage cleared (cookies, HTML5 local storage, IndexedDB, etc.) before the new window is opened
+    - __closebuttoncolor__: set as a valid hex color string, for example: `#00ff00`, to change from the default __Done__ button's color. Only applicable if toolbar is not disabled.
+    - __closebuttoncaption__: set to a string to use as the __Done__ button's caption. Note that you need to localize this value yourself.
+    - __disallowoverscroll__: Set to `yes` or `no` (default is `no`). Turns on/off the UIWebViewBounce property.
+    - __hidenavigationbuttons__:  set to `yes` or `no` to turn the toolbar navigation buttons on or off (defaults to `no`). Only applicable if toolbar is not disabled.
+    - __navigationbuttoncolor__:  set as a valid hex color string, for example: `#00ff00`, to change from the default color. Only applicable if navigation buttons are visible.
+    - __toolbar__:  set to `yes` or `no` to turn the toolbar on or off for the InAppBrowser (defaults to `yes`)
+    - __toolbarcolor__: set as a valid hex color string, for example: `#00ff00`, to change from the default color of the toolbar. Only applicable if toolbar is not disabled.
+    - __toolbartranslucent__:  set to `yes` or `no` to make the toolbar translucent(semi-transparent)  (defaults to `yes`). Only applicable if toolbar is not disabled.
+    - __lefttoright__: Set to `yes` to swap positions of the navigation buttons and the close button. Specifically, close button goes to the right and navigation buttons to the left.
+    - __enableViewportScale__:  Set to `yes` or `no` to prevent viewport scaling through a meta tag (defaults to `no`). Only applicable to UIWebView (`usewkwebview=no`) and WKWebView (`usewkwebview=yes`) on iOS 10+.
+    - __mediaPlaybackRequiresUserAction__: Set to `yes` to prevent HTML5 audio or video from autoplaying (defaults to `no`). Applicable to UIWebView (`usewkwebview=no`) and WKWebView (`usewkwebview=yes`).
+    - __allowInlineMediaPlayback__: Set to `yes` or `no` to allow in-line HTML5 media playback, displaying within the browser window rather than a device-specific playback interface. The HTML's `video` element must also include the `webkit-playsinline` attribute (defaults to `no`). Applicable to UIWebView (`usewkwebview=no`) and WKWebView (`usewkwebview=yes`).
+    - __keyboardDisplayRequiresUserAction__: Set to `yes` or `no` to open the keyboard when form elements receive focus via JavaScript's `focus()` call (defaults to `yes`). Only applicable to UIWebView (`usewkwebview=no`).
+    - __suppressesIncrementalRendering__: Set to `yes` or `no` to wait until all new view content is received before being rendered (defaults to `no`). Only applicable to UIWebView (`usewkwebview=no`).
+    - __presentationstyle__:  Set to `pagesheet`, `formsheet` or `fullscreen` to set the [presentation style](http://developer.apple.com/library/ios/documentation/UIKit/Reference/UIViewController_Class/Reference/Reference.html#//apple_ref/occ/instp/UIViewController/modalPresentationStyle) (defaults to `fullscreen`).
+    - __transitionstyle__: Set to `fliphorizontal`, `crossdissolve` or `coververtical` to set the [transition style](http://developer.apple.com/library/ios/#documentation/UIKit/Reference/UIViewController_Class/Reference/Reference.html#//apple_ref/occ/instp/UIViewController/modalTransitionStyle) (defaults to `coververtical`).
+    - __toolbarposition__: Set to `top` or `bottom` (default is `bottom`). Causes the toolbar to be at the top or bottom of the window.
+    - __hidespinner__: Set to `yes` or `no` to change the visibility of the loading indicator (defaults to `no`).
+
+    Windows supports these additional options:
+
+    - __hidden__: set to `yes` to create the browser and load the page, but not show it. The loadstop event fires when loading is complete. Omit or set to `no` (default) to have the browser open and load normally.
+    - __hardwareback__: works the same way as on Android platform.
+    - __fullscreen__: set to `yes` to create the browser control without a border around it. Please note that if __location=no__ is also specified, there will be no control presented to user to close IAB window.
+
+
+### Supported Platforms
+
+- Android
+- Browser
+- iOS
+- OSX
+- Windows
+
+### Example
+
+    var ref = cordova.InAppBrowser.open('http://apache.org', '_blank', 'location=yes');
+    var ref2 = cordova.InAppBrowser.open(encodeURI('http://ja.m.wikipedia.org/wiki/ハングル'), '_blank', 'location=yes');
+
+### OSX Quirks
+
+At the moment the only supported target in OSX is `_system`.
+
+`_blank` and `_self` targets are not yet implemented and are ignored silently. Pull requests and patches to get these to work are greatly appreciated.
+
+### Browser Quirks
+
+- Plugin is implemented via iframe,
+
+- Navigation history (`back` and `forward` buttons in LocationBar) is not implemented.
+
+## InAppBrowser
+
+The object returned from a call to `cordova.InAppBrowser.open` when the target is set to `'_blank'`.
+
+### Methods
+
+- addEventListener
+- removeEventListener
+- close
+- show
+- hide
+- executeScript
+- insertCSS
+
+## InAppBrowser.addEventListener
+
+> Adds a listener for an event from the `InAppBrowser`. (Only available when the target is set to `'_blank'`)
+
+    ref.addEventListener(eventname, callback);
+
+- __ref__: reference to the `InAppBrowser` window _(InAppBrowser)_
+
+- __eventname__: the event to listen for _(String)_
+
+  - __loadstart__: event fires when the `InAppBrowser` starts to load a URL.
+  - __loadstop__: event fires when the `InAppBrowser` finishes loading a URL.
+  - __loaderror__: event fires when the `InAppBrowser` encounters an error when loading a URL.
+  - __exit__: event fires when the `InAppBrowser` window is closed.
+  - __beforeload__: event fires when the `InAppBrowser` decides whether to load an URL or not (only with option `beforeload` set).
+  - __message__: event fires when the `InAppBrowser` receives a message posted from the page loaded inside the `InAppBrowser` Webview.
+
+- __callback__: the function that executes when the event fires. The function is passed an `InAppBrowserEvent` object as a parameter.
+
+## Example
+
+```javascript
+
+var inAppBrowserRef;
+
+function showHelp(url) {
+
+    var target = "_blank";
+
+    var options = "location=yes,hidden=yes,beforeload=yes";
+
+    inAppBrowserRef = cordova.InAppBrowser.open(url, target, options);
+
+    inAppBrowserRef.addEventListener('loadstart', loadStartCallBack);
+
+    inAppBrowserRef.addEventListener('loadstop', loadStopCallBack);
+
+    inAppBrowserRef.addEventListener('loaderror', loadErrorCallBack);
+
+    inAppBrowserRef.addEventListener('beforeload', beforeloadCallBack);
+
+    inAppBrowserRef.addEventListener('message', messageCallBack);
+}
+
+function loadStartCallBack() {
+
+    $('#status-message').text("loading please wait ...");
+
+}
+
+function loadStopCallBack() {
+
+    if (inAppBrowserRef != undefined) {
+
+        inAppBrowserRef.insertCSS({ code: "body{font-size: 25px;}" });
+
+        inAppBrowserRef.executeScript({ code: "\
+            var message = 'this is the message';\
+            var messageObj = {my_message: message};\
+            var stringifiedMessageObj = JSON.stringify(messageObj);\
+            webkit.messageHandlers.cordova_iab.postMessage(stringifiedMessageObj);"
+        });
+
+        $('#status-message').text("");
+
+        inAppBrowserRef.show();
+    }
+
+}
+
+function loadErrorCallBack(params) {
+
+    $('#status-message').text("");
+
+    var scriptErrorMesssage =
+       "alert('Sorry we cannot open that page. Message from the server is : "
+       + params.message + "');"
+
+    inAppBrowserRef.executeScript({ code: scriptErrorMesssage }, executeScriptCallBack);
+
+    inAppBrowserRef.close();
+
+    inAppBrowserRef = undefined;
+
+}
+
+function executeScriptCallBack(params) {
+
+    if (params[0] == null) {
+
+        $('#status-message').text(
+           "Sorry we couldn't open that page. Message from the server is : '"
+           + params.message + "'");
+    }
+
+}
+
+function beforeloadCallBack(params, callback) {
+
+    if (params.url.startsWith("http://www.example.com/")) {
+
+        // Load this URL in the inAppBrowser.
+        callback(params.url);
+    } else {
+
+        // The callback is not invoked, so the page will not be loaded.
+        $('#status-message').text("This browser only opens pages on http://www.example.com/");
+    }
+
+}
+
+function messageCallBack(params){
+    $('#status-message').text("message received: "+params.data.my_message);
+}
+
+```
+
+### InAppBrowserEvent Properties
+
+- __type__: the eventname, either `loadstart`, `loadstop`, `loaderror`, `message` or `exit`. _(String)_
+
+- __url__: the URL that was loaded. _(String)_
+
+- __code__: the error code, only in the case of `loaderror`. _(Number)_
+
+- __message__: the error message, only in the case of `loaderror`. _(String)_
+
+- __data__: the message contents , only in the case of `message`. A stringified JSON object. _(String)_
+
+
+### Supported Platforms
+
+- Android
+- Browser
+- iOS
+- Windows
+- OSX
+
+### Browser Quirks
+
+`loadstart`, `loaderror`, `message` events are not fired.
+
+### Windows Quirks
+
+`message` event is not fired.
+
+### Quick Example
+
+    var ref = cordova.InAppBrowser.open('http://apache.org', '_blank', 'location=yes');
+    ref.addEventListener('loadstart', function(event) { alert(event.url); });
+
+## InAppBrowser.removeEventListener
+
+> Removes a listener for an event from the `InAppBrowser`. (Only available when the target is set to `'_blank'`)
+
+    ref.removeEventListener(eventname, callback);
+
+- __ref__: reference to the `InAppBrowser` window. _(InAppBrowser)_
+
+- __eventname__: the event to stop listening for. _(String)_
+
+  - __loadstart__: event fires when the `InAppBrowser` starts to load a URL.
+  - __loadstop__: event fires when the `InAppBrowser` finishes loading a URL.
+  - __loaderror__: event fires when the `InAppBrowser` encounters an error loading a URL.
+  - __exit__: event fires when the `InAppBrowser` window is closed.
+  - __message__: event fires when the `InAppBrowser` receives a message posted from the page loaded inside the `InAppBrowser` Webview.
+
+- __callback__: the function to execute when the event fires.
+The function is passed an `InAppBrowserEvent` object.
+
+### Supported Platforms
+
+- Android
+- Browser
+- iOS
+- Windows
+
+### Quick Example
+
+    var ref = cordova.InAppBrowser.open('http://apache.org', '_blank', 'location=yes');
+    var myCallback = function(event) { alert(event.url); }
+    ref.addEventListener('loadstart', myCallback);
+    ref.removeEventListener('loadstart', myCallback);
+
+## InAppBrowser.close
+
+> Closes the `InAppBrowser` window.
+
+    ref.close();
+
+- __ref__: reference to the `InAppBrowser` window _(InAppBrowser)_
+
+### Supported Platforms
+
+- Android
+- Browser
+- iOS
+- Windows
+
+### Quick Example
+
+    var ref = cordova.InAppBrowser.open('http://apache.org', '_blank', 'location=yes');
+    ref.close();
+
+## InAppBrowser.show
+
+> Displays an InAppBrowser window that was opened hidden. Calling this has no effect if the InAppBrowser was already visible.
+
+    ref.show();
+
+- __ref__: reference to the InAppBrowser window (`InAppBrowser`)
+
+### Supported Platforms
+
+- Android
+- Browser
+- iOS
+- Windows
+
+### Quick Example
+
+    var ref = cordova.InAppBrowser.open('http://apache.org', '_blank', 'hidden=yes');
+    // some time later...
+    ref.show();
+
+## InAppBrowser.hide
+
+> Hides the InAppBrowser window. Calling this has no effect if the InAppBrowser was already hidden.
+
+    ref.hide();
+
+- __ref__: reference to the InAppBrowser window (`InAppBrowser`)
+
+### Supported Platforms
+
+- Android
+- iOS
+- Windows
+
+### Quick Example
+
+    var ref = cordova.InAppBrowser.open('http://apache.org', '_blank');
+    // some time later...
+    ref.hide();
+
+## InAppBrowser.executeScript
+
+> Injects JavaScript code into the `InAppBrowser` window. (Only available when the target is set to `'_blank'`)
+
+    ref.executeScript(details, callback);
+
+- __ref__: reference to the `InAppBrowser` window. _(InAppBrowser)_
+
+- __injectDetails__: details of the script to run, specifying either a `file` or `code` key. _(Object)_
+  - __file__: URL of the script to inject.
+  - __code__: Text of the script to inject.
+
+- __callback__: the function that executes after the JavaScript code is injected.
+    - If the injected script is of type `code`, the callback executes
+      with a single parameter, which is the return value of the
+      script, wrapped in an `Array`. For multi-line scripts, this is
+      the return value of the last statement, or the last expression
+      evaluated.
+
+### Supported Platforms
+
+- Android
+- Browser
+- iOS
+- Windows
+
+### Quick Example
+
+    var ref = cordova.InAppBrowser.open('http://apache.org', '_blank', 'location=yes');
+    ref.addEventListener('loadstop', function() {
+        ref.executeScript({file: "myscript.js"});
     });
 
-![iOS Sample](doc/images/ios_sample_01.png)
-![iOS Menu Sample](doc/images/ios_menu_sample_01.png)
+### Browser Quirks
 
-![Android Sample](doc/images/android_sample_01.png)
-![Android Menu Sample](doc/images/android_menu_sample_01.png)
+- only __code__ key is supported.
 
-Installation
-------------
+### Windows Quirks
 
-    cordova plugin add cordova-plugin-themeablebrowser
+Due to [MSDN docs](https://msdn.microsoft.com/en-us/library/windows.ui.xaml.controls.webview.invokescriptasync.aspx) the invoked script can return only string values, otherwise the parameter, passed to __callback__ will be `[null]`.
 
-Additional Properties
----------------------
+## InAppBrowser.insertCSS
 
-In addition to InAppBrowser's properties, following properties were added to fulfill this plugin's purpose in a nested JSON object.
+> Injects CSS into the `InAppBrowser` window. (Only available when the target is set to `'_blank'`)
 
-+ `statusbar` applicable to only iOS 7+.
-    + `color` sets status bar color for iOS 7+ in RGBA web hex format. eg. `#fff0f0ff`. Default to white. Applicable to only iOS 7+.
-+ `toolbar`
-    + `height` sets height of toolbar. Default to 44.
-    + `color` sets browser toolbar color in RGBA web hex format. eg. `#fff0f0ff`. Default to white. Also see `image`.
-    + `image` sets an image as browser toolbar background in titled mode. This property references to a **native** image resource, therefore it is platform dependent.
-+ `title`
-    + `color` sets title text color in RGBA web hex format. eg. `#fff0f0ff`. Default to black.
-    + `staticText` sets static text for title. This property overrides `showPageTitle` (see below).
-    + `showPageTitle` when set to true, title of the current web page will be shown.
-+ `backButton`
-    + `image` sets image for back button. This property references to a **native** image resource, therefore it is platform dependent.
-    + `imagePressed` sets image for back button in its pressed state. This property references to a **native** image resource, therefore it is platform dependent.
-    + `align` aligns back button to either `left` or `right`. Default to `left`.
-    + `event` raises an custom event with given text as event name when back button is pressed. Optional.
-+ `forwardButton`
-    + `image` sets image for forward button. This property references to a **native** image resource, therefore it is platform dependent.
-    + `imagePressed` sets image for forward button in its pressed state. This property references to a **native** image resource, therefore it is platform dependent.
-    + `align` aligns forward button to either `left` or `right`. Default to `left`.
-    + `event` raises an custom event with given text as event name when forward button is pressed. Optional.
-+ `closeButton`
-    + `image` sets image for close button. This property references to a **native** image resource, therefore it is platform dependent.
-    + `imagePressed` sets image for close button in its pressed state. This property references to a **native** image resource, therefore it is platform dependent.
-    + `align` aligns close button to either `left` or `right`. Default to `left`.
-    + `event` raises an custom event with given text as event name when close button is pressed. Optional.
-+ `menu`
-    + `title` sets menu title when menu button is clicked. iOS only.
-    + `cancel` sets menu cancel button text. iOS only.
-    + `image` sets image for menu button. This property references to a **native** image resource, therefore it is platform dependent.
-    + `imagePressed` sets image for menu button in its pressed state. This property references to a **native** image resource, therefore it is platform dependent.
-    + `event` raises an custom event with given text as event name when menu button is pressed. Optional.
-    + `align` aligns menu button to either `left` or `right`. Default to `left`.
-    + `items` is a list of items to be shown when menu is open
-        + `event` defines the event name that will be raised when this menu item is clicked. The callbacks to menu events will receive an event object that contains the following properties: `url` is the current URL shown in browser and `index` is the index of the selected item in `items`.
-        + `label` defines the menu item label text.
-+ `customButtons` is a list of objects that will be inserted into toolbar when given.
-    + `image` sets image for custom button. This property references to a **native** image resource, therefore it is platform dependent.
-    + `imagePressed` sets image for custom button in its pressed state. This property references to a **native** image resource, therefore it is platform dependent.
-    + `align` aligns custom button to either `left` or `right`. Default to `left`.
-    + `event` raises an custom event with given text as event name when custom button is pressed. The callbacks to custom button events will receive an event object that contains the following properties: `url` is the current URL shown in browser and `index` is the index of the selected button in `customButtons`.
-+ `authorization` can be used to set an HTTP Authorisation header to authenticate users directly.
-+ `backButtonCanClose` allows back button to close browser when there's no more to go back. Otherwise, back button will be disabled.
-+ `disableAnimation` when set to true, disables browser show and close animations.
-+ `fullscreen` when set to `true`, WebView will expand to the full height of the app, going under the toolbar. This flag combined with transparent toolbar color could allow toolbar buttons to appear floating on top of the WebView. (Remember, this plugin supports RGBA color format.) Optional.
+    ref.insertCSS(details, callback);
 
-All properties are optional with little default values. If a property is not given, its corresponding UI element will not be shown.
+- __ref__: reference to the `InAppBrowser` window _(InAppBrowser)_
 
-One thing to note is that all image resources reference to **native** resource bundle. So all images need to be imported to native project first. In case of Android, the image name will be looked up under `R.drawable`. eg. If image name is `hello_world`, `R.drawable.hello_world` will be referenced.
+- __injectDetails__: details of the script to run, specifying either a `file` or `code` key. _(Object)_
+  - __file__: URL of the stylesheet to inject.
+  - __code__: Text of the stylesheet to inject.
 
-You may have noticed that ThemedBrowser added an optional menu as well as custom buttons, which you can utilize to respond to some simple user actions.
+- __callback__: the function that executes after the CSS is injected.
 
-Experimental Properties
------------------------
+### Supported Platforms
 
-Followings are experimental properties that can be used in some special cases. Usage of these property are discouraged due to stability and efficiency.
+- Android
+- iOS
+- Windows
 
-For any object that supports `image` and `imagePressed` properties, there is a set of fallback properties that can be used when you absolutely cannot import native sources due to some circumstances.
+### Quick Example
 
-+ `(\w+Button|menu|toolbar)`
-    + `wwwImage` is like `image` but loads image from Cordova's `www` directory instead. This is a fallback solution when you cannot import native resources. Use `image` property as much as possible.
-    + `wwwImagePressed` is like `image` but loads image from Cordova's `www` directory instead. This is a fallback solution when you cannot import native resources. Use `image` property as much as possible.
-    + `wwwImageDensity` is needed when `wwwImage` and/or `wwwImagePressed` are given. Since these images are not loaded from resource bundle, density is unknown, therefore density needs to set by this property. Corresponds to iOS' `@2x`, `@3x` suffix.
-
-eg.
-
-    cordova.ThemeableBrowser.open('http://apache.org', '_blank', {
-        ...
-        backButton: {
-            wwwImage: 'images/back.png',
-            wwwImagePressed: 'images/back_pressed.png',
-            wwwImageDensity: 2,
-            align: 'left',
-            event: 'backPressed'
-        }
-        ...
+    var ref = cordova.InAppBrowser.open('http://apache.org', '_blank', 'location=yes');
+    ref.addEventListener('loadstop', function() {
+        ref.insertCSS({file: "mystyles.css"});
     });
+__
 
-File path is relative to `www` directory, which contains your web app sources. One thing that is very important is the `wwwImageDensity` property. Since images are not loaded from native resource bundle, density of any loaded images cannot not be automatically determined, therefore it needs to be explicity set. *You* are responsible for supplying the correct images with its corresponding density for any given device. If you don't know what image density means, please read [this documentation](https://developer.apple.com/library/ios/documentation/2DDrawing/Conceptual/DrawingPrintingiOS/SupportingHiResScreensInViews/SupportingHiResScreensInViews.html). Ideally you are supposed to perform a device detection based on `window.devicePixelRatio` to supply optimal images. However a cheap way is to always supply high density images and rely on OS to scale down for lower screen density devices. Of course this would be inefficient, but it would save you a lot of trouble. Following is a cheatsheet that corresponds `wwwImageDensity` values to iOS and Android densities. Though `wwwImageDensity` does accept float values, followings are handy lookup.
+## <a id="sample"></a>Sample: Show help pages with an InAppBrowser
 
-| `wwwImageDensity` | iOS          | Android |
-| ----------------- | ------------ | ------- |
-| 1                 | *No suffix*  | mdpi    |
-| 2                 | `@2x`        | xhdpi   |
-| 3                 | `@3x`        | xxdpi   |
-| 4                 | *N/A*        | xxxhdpi |
+You can use this plugin to show helpful documentation pages within your app. Users can view online help documents and then close them without leaving the app.
 
-Additional Methods
-------------------
+Here's a few snippets that show how you do this.
 
-The reference object returned by `cordova.ThemeableBrowser.open` contains the following methods in addition to InAppBrowser's implementation:
+* [Give users a way to ask for help](#give).
+* [Load a help page](#load).
+* [Let users know that you're getting their page ready](#let).
+* [Show the help page](#show).
+* [Handle page errors](#handle).
 
-+ `reload` reloads the current page.
+### <a id="give"></a>Give users a way to ask for help
 
-Errors and Warnings
--------------------
+There's lots of ways to do this in your app. A drop down list is a simple way to do that.
 
-This plugin does not want to be the source of your app crash, not to mention that you have no way to catch exceptions from native code, so it does not throw exceptions. Neither does it want to write to log, because it wants to avoid polluting your log and respect your choice of logging library. Hence all errors are warnings are reported back to you through events. You may listen to two special events defined by `cordova.ThemeableBrowser.EVT_ERR` and `cordova.ThemeableBrowser.EVT_WRN`. Upon error or warning, you will receive event object that contains the following properties:
+```html
 
-+ `code` contains the error or warning code, which is defined by one of the followings:
-    + `cordova.ThemeableBrowser.ERR_CRITICAL` is raised for a critical error that you should definitely try to resolve. eg. JSON parser failure. Dialer launch failure. Raised only for `cordova.ThemeableBrowser.EVT_ERR` event.
-    + `cordova.ThemeableBrowser.ERR_LOADFAIL` is raised when a native image that you referenced in your config failed to load from native resource bundle. Raised only for `cordova.ThemeableBrowser.EVT_ERR` event.
-    + `cordova.ThemeableBrowser.WRN_UNDEFINED` is raised when a property in your config is not defined. You will not get this warning for every property that is undefined, just the ones that might cause confusion. Raised only for `cordova.ThemeableBrowser.EVT_WRN` event.
-    + `cordova.ThemeableBrowser.WRN_UNEXPECTED` is raised when an unexpected behaviour is committed. You can ignore this warning, since such behaviours will be simply ignored. eg. Try to close the browser when it's already closed. Raised only for `cordova.ThemeableBrowser.EVT_WRN` event.
-+ `message` contains a readable message that will try its best to tell you want went wrong.
+<select id="help-select">
+    <option value="default">Need help?</option>
+    <option value="article">Show me a helpful article</option>
+    <option value="video">Show me a helpful video</option>
+    <option value="search">Search for other topics</option>
+</select>
 
-Examples:
+```
 
-    cordova.ThemeableBrowser.open('http://apache.org', '_blank', {
-        ...
-    }).addEventListener(cordova.ThemeableBrowser.EVT_ERR, function(e) {
-        if (e.code === cordova.ThemeableBrowser.ERR_CRITICAL) {
-            // TODO: Handle critical error.
-        } else if (e.code === cordova.ThemeableBrowser.ERR_LOADFAIL) {
-            // TODO: Image failed to load.
-        }
+Gather the users choice in the ``onDeviceReady`` function of the page and then send an appropriate URL to a helper function in some shared library file. Our helper function is named ``showHelp()`` and we'll write that function next.
 
-        console.error(e.message);
-    }).addEventListener(cordova.ThemeableBrowser.EVT_WRN, function(e) {
-        if (e.code === cordova.ThemeableBrowser.WRN_UNDEFINED) {
-            // TODO: Some property undefined in config.
-        } else if (e.code === cordova.ThemeableBrowser.WRN_UNEXPECTED) {
-            // TODO: Something strange happened. But no big deal.
-        }
+```javascript
 
-        console.log(e.message);
-    });
+$('#help-select').on('change', function (e) {
 
-These events are intended to help you debug strange behaviours. So if you run into something weird, please listene to these events and it might just tell you what's wrong. Please note errors and warnings are not completely consistent across platforms. There are some minor platform differences.
+    var url;
 
-Import Native Images
---------------------
+    switch (this.value) {
 
-If you are a native developer and are already aware how to import native image resources, feel free to skip this section. Otherwise, here are some tips. First of all, your native iOS and Android projects are located at:
+        case "article":
+            url = "https://cordova.apache.org/docs/en/latest/"
+                        + "reference/cordova-plugin-inappbrowser/index.html";
+            break;
 
-    <cordova_project_root>/platforms/ios
-    <cordova_project_root>/platforms/android
+        case "video":
+            url = "https://youtu.be/F-GlVrTaeH0";
+            break;
 
-Let's start with Android, which is quite straightforward. Prepare your images for all of the pixel densities that you'd like to support. [Here is a documentation](http://developer.android.com/guide/practices/screens_support.html) that explains this concept. The gist is that on higher pixel density screens, your images will have to have higher resolution in order to look sharp on an actual device, so you want to prepare multiple files for the same image at different resolutions for their respective pixel density. In Android, there are a lot of densities due to diversity of devices, so you have to decide which ones you want to support. Fortunately if you don't have an image for a particular pixel density, Android will automatically pick up the closest one and try to down scale or up scale it. Of course this process is not very efficient, so you have to make your decisions. The directory where you want to place your images are under
+        case "search":
+            url = "https://www.google.com/#q=inAppBrowser+plugin";
+            break;
+    }
 
-    <cordova_project_root>/platforms/android/res
+    showHelp(url);
 
-Notice how there are multiple folders named `drawble-.*`. Each file for the same image should be named the same, but it will need to be moved under the correct directory with respect to its target density. eg. If `icon.png` is intended for xhdpi, then it needs to go under `drawable-xhdpi` directory. In your JavaScript config, you can then reference to this iamge without extension. eg. With the previous example, simply `icon` will suffice.
+});
 
-To import image resources for iOS, it is slightly trickier, because you **have** to register your file in Xcode project file with help from Xcode, and there are two ways of doing this. Let's start with the old school way. iOS also shares similar concept with Android in terms of pixel density. iPhone to iPhone 3GS uses 1x the resolution, iPhone 4 to iPhone 6 uses 2x the resolution while iPhone 6 Plus and above uses 3x the resolution (even though it's actually down scaled, but that's a different discussion). In the old school way, you have to name your images with `@1x`, `@2x`, and `@3x` suffix with respect to their target density. eg. `icon@2x.png`. [Here is a documentation](https://developer.apple.com/library/ios/documentation/2DDrawing/Conceptual/DrawingPrintingiOS/SupportingHiResScreensInViews/SupportingHiResScreensInViews.html) that explains this concept. You then have to move it under
+```
 
-    <cordova_project_root>/platforms/ios/<project_name>/Resources
+### <a id="load"></a>Load a help page
 
-Then open your native iOS project with Xcode by double clicking on
+We'll use the ``open`` function to load the help page. We're setting the ``hidden`` property to ``yes`` so that we can show the browser only after the page content has loaded. That way, users don't see a blank browser while they wait for content to appear. When the ``loadstop`` event is raised, we'll know when the content has loaded. We'll handle that event shortly.
 
-    <cordova_project_root>/platforms/ios/<project_name>.xcodeproj
+```javascript
 
-In the left hand side panel, make sure you are in Project navigator tab. Then you can see a list of directories under your project. One of them being `Resources`, but you don't see your newly added images there. Now you need to drag your images fron Finder to Xcode and drop it under `Resource` folder. In your JavaScript config, you can then reference to them without suffix or extension. eg. With the previous example, simply `icon` will suffice.
+function showHelp(url) {
 
-The new school way is to use [Asset Catalog](https://developer.apple.com/library/ios/recipes/xcode_help-image_catalog-1.0/Recipe.html). This is the recommended technique from Xcode 5+ and iOS 7+. It gives you better management of all of your image resources. ie. No more suffix, and you can see all your images for different densities in one table etc. However there are more steps involved to set it up. Please reference to [this guide](http://www.intertech.com/Blog/xcode-assets-xcassets/) for a step by step walkthrough.
+    var target = "_blank";
 
-If for some reason you absolutely cannot import native images, you may consider using the `wwwImage`, `wwwImagePressed` and `wwwImageDensity` properties as fallback solution, though this is an experimental feature and is discouraged. See [above](#experimental-properties) for documentation.
+    var options = "location=yes,hidden=yes";
 
-FAQ
----
+    inAppBrowserRef = cordova.InAppBrowser.open(url, target, options);
 
-### I just installed this plugin, how come it just shows a blank toolbar?
+    inAppBrowserRef.addEventListener('loadstart', loadStartCallBack);
 
-The purpose of this plugin is to allow **you** to style the in app browser the way you want. Isn't that why you installed this plugin in the first place? Hence, it does not come with any defaults. Every UI element needs to be styled by you, otherwise it's hidden. This also avoids polluting your resouce bundle with default images.
+    inAppBrowserRef.addEventListener('loadstop', loadStopCallBack);
 
-### Why does my menu on Android look ugly?
+    inAppBrowserRef.addEventListener('loaderror', loadErrorCallBack);
 
-Android menu is simply a [Spinner](http://developer.android.com/guide/topics/ui/controls/spinner.html), which picks up its style from your Activity's theme. By default Cordova uses the very old [Theme.Black.NoTitleBar](http://developer.android.com/reference/android/R.style.html#Theme_Black_NoTitleBar), which is ugly. Open your AndroidManifest.xml and change your `android:theme` attribute to something more morden, such as [Theme.Holo](http://developer.android.com/reference/android/R.style.html#Theme_Holo) or [Base.Theme.AppCompat](http://developer.android.com/reference/android/support/v7/appcompat/R.style.html#Base_Theme_AppCompat) from [support library](https://developer.android.com/tools/support-library/features.html#v7-appcompat).
+}
 
-### How do I style Android menu?
+```
 
-Android menu is simply a [Spinner](http://developer.android.com/guide/topics/ui/controls/spinner.html) with default layout resources, which picks up its style from your Activity's theme. You can style it by making a theme of your app and apply it to your activity. See `android:dropDownListViewStyle`.
+### <a id="let"></a>Let users know that you're getting their page ready
 
-### How do I add margings and paddings?
+Because the browser doesn't immediately appear, we can use the ``loadstart`` event to show a status message, progress bar, or other indicator. This assures users that content is on the way.
 
-There is no margins or paddings. However notice that you can assign images to each of the buttons. So take advantage of PNG's transparency to create margins/paddings around your buttons.
+```javascript
 
-### How do I add shadow to the toolbar?
+function loadStartCallBack() {
 
-First, notice that you can use an image as well as color for toolbar background. Use PNG for background image and create shadow inside this image. Next, you will probably be concerned about how buttons will slightly misaligned due since they always middle align. Again create some transparent borders in your button images to offset the misalignment. eg. Say your shadow is 5px tall, which causes buttons to allear lower than they shoud. Create a 10px transparent bottom border for each of your button icons and you are set.
+    $('#status-message').text("loading please wait ...");
 
-Supported Platforms
--------------------
+}
 
-+ iOS 5.0+
-+ Android 2.0+
+```
 
-Currently there is no plan to support other platforms, though source code from InAppBrowser is kept for merge purposes, they are inactive, since they are removed from `plugin.xml`.
+### <a id="show"></a>Show the help page
 
-Migration
----------
+When the ``loadstopcallback`` event is raised, we know that the content has loaded and we can make the browser visible. This sort of trick can create the impression of better performance. The truth is that whether you show the browser before content loads or not, the load times are exactly the same.
 
-This plugin is **not** a drop-in replacement for InAppBrowser. The biggest change that was made from InAppBrowser, which caused it to be no longer compatible with InAppBrowser's API is that `options` parameter now accepts a JavaScript object instead of string.
+```javascript
 
-    cordova.ThemeableBrowser.open('http://apache.org', '_blank', {
-        customButtons: [
-            {
-                image: 'share',
-                imagePressed: 'share_pressed',
-                align: 'right',
-                event: 'sharePressed'
-            }
-        ],
-        menu: {
-            image: 'menu',
-            imagePressed: 'menu_pressed',
-            items: [
-                {
-                    event: 'helloPressed',
-                    label: 'Hello World!'
-                },
-                {
-                    event: 'testPressed',
-                    label: 'Test!'
-                }
-            ]
-        }
-    });
+function loadStopCallBack() {
 
-As you can see from above, this allows configurations to have more robust and readable definition.
+    if (inAppBrowserRef != undefined) {
 
-Furthermore, the object returned by `open` always returns its own instance allowing chaining of methods. Obviously, this breaks the immitation of `window.open()`, however it's an optional feature that you can choose not to use if you want to stay loyal to the original.
+        inAppBrowserRef.insertCSS({ code: "body{font-size: 25px;}" });
 
-    cordova.ThemeableBrowser.open('http://apache.org', '_blank', {
-        customButtons: [
-            {
-                image: 'share',
-                imagePressed: 'share_pressed',
-                align: 'right',
-                event: 'sharePressed'
-            }
-        ],
-        menu: {
-            image: 'menu',
-            imagePressed: 'menu_pressed',
-            items: [
-                {
-                    event: 'helloPressed',
-                    label: 'Hello World!'
-                },
-                {
-                    event: 'testPressed',
-                    label: 'Test!'
-                }
-            ]
-        }
-    }).addEventListener('sharePressed', function(event) {
-        alert(event.url);
-    }).addEventListener('helloPressed', function(event) {
-        alert(event.url);
-    }).addEventListener('testPressed', function(event) {
-        alert(event.url);
-    });
+        $('#status-message').text("");
 
-Two properties from InAppBrowser are disabled.
-+ `location` is always `false` because address bar is not needed for an immersive experience of an integrated browser.
-+ `toolbarposition` is always `top` to remain consistent across platforms.
+        inAppBrowserRef.show();
+    }
 
-One is redefined.
-+ `toolbar` is redefined to contain toolbar settings and toolbar is always shown, because the whole point why you are using this plugin is to style toolbar right?
+}
 
-License
--------
+```
+You might have noticed the call to the ``insertCSS`` function. This serves no particular purpose in our scenario. But it gives you an idea of why you might use it. In this case, we're just making sure that the font size of your pages have a certain size. You can use this function to insert any CSS style elements. You can even point to a CSS file in your project.
 
-This project is licensed under Aapache License 2.0. See [LICENSE](LICENSE) file.
+### <a id="handle"></a>Handle page errors
+
+Sometimes a page no longer exists, a script error occurs, or a user lacks permission to view the resource. How or if you handle that situation is completely up to you and your design. You can let the browser show that message or you can present it in another way.
+
+We'll try to show that error in a message box. We can do that by injecting a script that calls the ``alert`` function. That said, this won't work in browsers on Windows devices so we'll have to look at the parameter of the ``executeScript`` callback function to see if our attempt worked. If it didn't work out for us, we'll just show the error message in a ``<div>`` on the page.
+
+```javascript
+
+function loadErrorCallBack(params) {
+
+    $('#status-message').text("");
+
+    var scriptErrorMesssage =
+       "alert('Sorry we cannot open that page. Message from the server is : "
+       + params.message + "');"
+
+    inAppBrowserRef.executeScript({ code: scriptErrorMesssage }, executeScriptCallBack);
+
+    inAppBrowserRef.close();
+
+    inAppBrowserRef = undefined;
+
+}
+
+function executeScriptCallBack(params) {
+
+    if (params[0] == null) {
+
+        $('#status-message').text(
+           "Sorry we couldn't open that page. Message from the server is : '"
+           + params.message + "'");
+    }
+
+}
+
+```
+
+## More Usage Info
+
+### Local Urls ( source is in the app package )
+```
+var iab = cordova.InAppBrowser;
+
+iab.open('local-url.html');                  // loads in the Cordova WebView
+iab.open('local-url.html', '_self');         // loads in the Cordova WebView
+iab.open('local-url.html', '_system');       // Security error: system browser, but url will not load (iOS)
+iab.open('local-url.html', '_blank');        // loads in the InAppBrowser
+iab.open('local-url.html', 'random_string'); // loads in the InAppBrowser
+iab.open('local-url.html', 'random_string', 'location=no'); // loads in the InAppBrowser, no location bar
+
+```
+
+
+
+### Whitelisted Content
+
+```
+var iab = cordova.InAppBrowser;
+
+iab.open('http://whitelisted-url.com');                  // loads in the Cordova WebView
+iab.open('http://whitelisted-url.com', '_self');         // loads in the Cordova WebView
+iab.open('http://whitelisted-url.com', '_system');       // loads in the system browser
+iab.open('http://whitelisted-url.com', '_blank');        // loads in the InAppBrowser
+iab.open('http://whitelisted-url.com', 'random_string'); // loads in the InAppBrowser
+
+iab.open('http://whitelisted-url.com', 'random_string', 'location=no'); // loads in the InAppBrowser, no location bar
+
+```
+
+### Urls that are not white-listed
+
+```
+var iab = cordova.InAppBrowser;
+
+iab.open('http://url-that-fails-whitelist.com');                  // loads in the InAppBrowser
+iab.open('http://url-that-fails-whitelist.com', '_self');         // loads in the InAppBrowser
+iab.open('http://url-that-fails-whitelist.com', '_system');       // loads in the system browser
+iab.open('http://url-that-fails-whitelist.com', '_blank');        // loads in the InAppBrowser
+iab.open('http://url-that-fails-whitelist.com', 'random_string'); // loads in the InAppBrowser
+iab.open('http://url-that-fails-whitelist.com', 'random_string', 'location=no'); // loads in the InAppBrowser, no location bar
+
+```

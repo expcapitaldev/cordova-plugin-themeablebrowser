@@ -16,7 +16,7 @@
        specific language governing permissions and limitations
        under the License.
 */
-package com.initialxy.cordova.themeablebrowser;
+package org.apache.cordova.inappbrowser;
 
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.LOG;
@@ -28,6 +28,7 @@ import android.webkit.JsPromptResult;
 import android.webkit.WebChromeClient;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.webkit.GeolocationPermissions.Callback;
 
 public class InAppChromeClient extends WebChromeClient {
@@ -75,8 +76,8 @@ public class InAppChromeClient extends WebChromeClient {
      * If the client returns true, WebView will assume that the client will
      * handle the prompt dialog and call the appropriate JsPromptResult method.
      *
-     * The prompt bridge provided for the ThemeableBrowser is capable of executing any
-     * oustanding callback belonging to the ThemeableBrowser plugin. Care has been
+     * The prompt bridge provided for the InAppBrowser is capable of executing any
+     * oustanding callback belonging to the InAppBrowser plugin. Care has been
      * taken that other callbacks cannot be triggered, and that no other code
      * execution is possible.
      *
@@ -85,7 +86,7 @@ public class InAppChromeClient extends WebChromeClient {
      * gap-iab://<callbackId>
      *
      * where <callbackId> is the string id of the callback to trigger (something
-     * like "ThemeableBrowser0123456789")
+     * like "InAppBrowser0123456789")
      *
      * If present, the prompt message is expected to be a JSON-encoded value to
      * pass to the callback. A JSON_EXCEPTION is returned if the JSON is invalid.
@@ -103,7 +104,7 @@ public class InAppChromeClient extends WebChromeClient {
             if(defaultValue.startsWith("gap-iab://")) {
                 PluginResult scriptResult;
                 String scriptCallbackId = defaultValue.substring(10);
-                if (scriptCallbackId.startsWith("ThemeableBrowser")) {
+                if (scriptCallbackId.matches("^InAppBrowser[0-9]{1,10}$")) {
                     if(message == null || message.length() == 0) {
                         scriptResult = new PluginResult(PluginResult.Status.OK, new JSONArray());
                     } else {
@@ -117,11 +118,16 @@ public class InAppChromeClient extends WebChromeClient {
                     result.confirm("");
                     return true;
                 }
+                else {
+                    // Anything else that doesn't look like InAppBrowser0123456789 should end up here
+                    LOG.w(LOG_TAG, "InAppBrowser callback called with invalid callbackId : "+ scriptCallbackId);
+                    result.cancel();
+                    return true;
+                }
             }
-            else
-            {
+            else {
                 // Anything else with a gap: prefix should get this message
-                LOG.w(LOG_TAG, "ThemeableBrowser does not support Cordova API calls: " + url + " " + defaultValue); 
+                LOG.w(LOG_TAG, "InAppBrowser does not support Cordova API calls: " + url + " " + defaultValue); 
                 result.cancel();
                 return true;
             }
