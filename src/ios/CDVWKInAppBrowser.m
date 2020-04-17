@@ -880,16 +880,23 @@ BOOL isExiting = FALSE;
     self.addressLabel.textColor = [UIColor colorWithWhite:1.000 alpha:1.000];
     self.addressLabel.userInteractionEnabled = NO;
 
-    NSString* frontArrowString = NSLocalizedString(@"►", nil); // create arrow from Unicode char
-    self.forwardButton = [[UIBarButtonItem alloc] initWithTitle:frontArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goForward:)];
+//     NSString* frontArrowString = NSLocalizedString(@"►", nil); // create arrow from Unicode char
+//     self.forwardButton = [[UIBarButtonItem alloc] initWithTitle:frontArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goForward:)];
+
+	UIImage *forwardArrow = [self drawForwardArrow];
+    self.forwardButton = [[UIBarButtonItem alloc] initWithImage:forwardArrow style:UIBarButtonItemStylePlain target:self action:@selector(goForward:)];
+
     self.forwardButton.enabled = YES;
     self.forwardButton.imageInsets = UIEdgeInsetsZero;
     if (_browserOptions.navigationbuttoncolor != nil) { // Set button color if user sets it in options
       self.forwardButton.tintColor = [self colorFromHexString:_browserOptions.navigationbuttoncolor];
     }
 
-    NSString* backArrowString = NSLocalizedString(@"◄", nil); // create arrow from Unicode char
-    self.backButton = [[UIBarButtonItem alloc] initWithTitle:backArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
+//     NSString* backArrowString = NSLocalizedString(@"◄", nil); // create arrow from Unicode char
+//     self.backButton = [[UIBarButtonItem alloc] initWithTitle:backArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
+	UIImage *backArrow = [self drawBackArrow];
+	self.backButton = [[UIBarButtonItem alloc] initWithImage:backArrow  style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
+
     self.backButton.enabled = YES;
     self.backButton.imageInsets = UIEdgeInsetsZero;
     if (_browserOptions.navigationbuttoncolor != nil) { // Set button color if user sets it in options
@@ -927,7 +934,9 @@ BOOL isExiting = FALSE;
     // but, if you want to set this yourself, knock yourself out (we can't set the title for a system Done button, so we have to create a new one)
     self.closeButton = nil;
     // Initialize with title if title is set, otherwise the title will be 'Done' localized
-    self.closeButton = title != nil ? [[UIBarButtonItem alloc] initWithTitle:title style:UIBarButtonItemStyleBordered target:self action:@selector(close)] : [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(close)];
+    // self.closeButton = title != nil ? [[UIBarButtonItem alloc] initWithTitle:title style:UIBarButtonItemStyleBordered target:self action:@selector(close)] : [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(close)];
+    self.closeButton = title != nil ? [[UIBarButtonItem alloc] initWithTitle:title style:UIBarButtonItemStyleBordered target:self action:@selector(close)] : [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemStop target:self action:@selector(close)];
+
     self.closeButton.enabled = YES;
     // If color on closebutton is requested then initialize with that that color, otherwise use initialize with default
     self.closeButton.tintColor = colorString != nil ? [self colorFromHexString:colorString] : [UIColor colorWithRed:60.0 / 255.0 green:136.0 / 255.0 blue:230.0 / 255.0 alpha:1];
@@ -1161,6 +1170,12 @@ BOOL isExiting = FALSE;
         [self.webView setFrame:CGRectMake(self.webView.frame.origin.x, TOOLBAR_HEIGHT + [self getStatusBarOffset], self.webView.frame.size.width, self.webView.frame.size.height - [self getStatusBarOffset] + statusBarHeight)];
         [self.toolbar setFrame:CGRectMake(self.toolbar.frame.origin.x, [self getStatusBarOffset], self.toolbar.frame.size.width, self.toolbar.frame.size.height)];
     }
+
+    // CK add https://github.com/apache/cordova-plugin-inappbrowser/issues/301
+//         if ((_browserOptions.toolbar) && ([_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop])) {
+//             [self.webView setFrame:CGRectMake(self.webView.frame.origin.x, TOOLBAR_HEIGHT + [self getStatusBarOffset], self.webView.frame.size.width, self.webView.frame.size.height)];
+//             [self.toolbar setFrame:CGRectMake(self.toolbar.frame.origin.x, [self getStatusBarOffset], self.toolbar.frame.size.width, self.toolbar.frame.size.height)];
+//         }
 }
 
 // Helper function to convert hex color string to UIColor
@@ -1296,6 +1311,36 @@ BOOL isExiting = FALSE;
     }
     
     return YES;
+}
+
+
+- (UIImage*)drawForwardArrow
+{
+    CGSize canvasSize = CGSizeMake(20,20);
+    CGFloat scale = [UIScreen mainScreen].scale;
+
+     canvasSize.width *= scale;
+    canvasSize.height *= scale;
+
+     UIGraphicsBeginImageContextWithOptions(canvasSize, false, 0);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+
+     CGContextBeginPath(context);
+    CGContextMoveToPoint(   context, canvasSize.width * 3.0/10.0, canvasSize.height * 2.8/10.0);
+    CGContextAddLineToPoint(context, canvasSize.width * 5.0/10.0, canvasSize.height * 5.0/10.0);
+    CGContextAddLineToPoint(context, canvasSize.width * 3.0/10.0, canvasSize.height * 7.2/10.0);
+
+     CGContextSetLineWidth(context, (scale > 1.0 ? 0.75 * scale : 1.0));
+    CGContextSetStrokeColorWithColor(context, [UIColor blackColor].CGColor);
+    CGContextStrokePath(context);
+
+     return UIGraphicsGetImageFromCurrentImageContext();
+}
+
+-(UIImage*)drawBackArrow
+{
+    UIImage *forwardArrow = [self drawForwardArrow];
+    return [UIImage imageWithCGImage:forwardArrow.CGImage scale:forwardArrow.scale orientation:UIImageOrientationUpMirrored];
 }
 
 
