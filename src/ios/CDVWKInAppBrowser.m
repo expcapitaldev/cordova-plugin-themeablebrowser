@@ -916,6 +916,25 @@ BOOL isExiting = FALSE;
         [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
     }
 
+
+
+    // The correct positioning of title is not that important right now, since
+        // rePositionViews will take care of it a bit later.
+        self.titleLabel = nil;
+       // if (_browserOptions.title) {
+            self.titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(10, 0, 10, TOOLBAR_HEIGHT)];
+            self.titleLabel.textAlignment = NSTextAlignmentCenter;
+            self.titleLabel.numberOfLines = 1;
+            self.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+           // self.titleLabel.textColor = [CDVThemeableBrowserViewController colorFromRGBA:[self getStringFromDict:_browserOptions.title withKey:kThemeableBrowserPropColor withDefault:@"#000000ff"]];
+			self.titleLabel.textColor = [self colorFromHexString:_browserOptions.navigationbuttoncolor]; // TODO color
+//             if (_browserOptions.title[kThemeableBrowserPropStaticText]) {
+//                 self.titleLabel.text = _browserOptions.title[kThemeableBrowserPropStaticText];
+//             }
+
+            [self.toolbar addSubview:self.titleLabel];
+       // }
+
    //  self.view.backgroundColor = [UIColor grayColor];
  	self.view.backgroundColor = [UIColor clearColor];
     [self.view addSubview:self.toolbar];
@@ -1192,18 +1211,18 @@ BOOL isExiting = FALSE;
 #pragma mark WKNavigationDelegate
 
 - (void)webView:(WKWebView *)theWebView didStartProvisionalNavigation:(WKNavigation *)navigation{
-    
+
     // loading url, start spinner, update back/forward
-    
+
     self.addressLabel.text = NSLocalizedString(@"Loading...", nil);
     self.backButton.enabled = theWebView.canGoBack;
     self.forwardButton.enabled = theWebView.canGoForward;
-    
+
     NSLog(_browserOptions.hidespinner ? @"Yes" : @"No");
     if(!_browserOptions.hidespinner) {
         [self.spinner startAnimating];
     }
-    
+
     return [self.navigationDelegate didStartProvisionalNavigation:theWebView];
 }
 
@@ -1211,27 +1230,38 @@ BOOL isExiting = FALSE;
 {
     NSURL *url = navigationAction.request.URL;
     NSURL *mainDocumentURL = navigationAction.request.mainDocumentURL;
-    
+
     BOOL isTopLevelNavigation = [url isEqual:mainDocumentURL];
-    
+
     if (isTopLevelNavigation) {
         self.currentURL = url;
     }
-    
+
     [self.navigationDelegate webView:theWebView decidePolicyForNavigationAction:navigationAction decisionHandler:decisionHandler];
 }
 
 - (void)webView:(WKWebView *)theWebView didFinishNavigation:(WKNavigation *)navigation
 {
     // update url, stop spinner, update back/forward
-    
+
     self.addressLabel.text = [self.currentURL absoluteString];
     self.backButton.enabled = theWebView.canGoBack;
     self.forwardButton.enabled = theWebView.canGoForward;
     theWebView.scrollView.contentInset = UIEdgeInsetsZero;
-    
-    [self.spinner stopAnimating];
-    
+
+ 	[self.spinner stopAnimating];
+
+	[self.webView evaluateJavaScript:@"document.title" completionHandler:^(id _Nullable title, NSError * _Nullable error) {
+
+        self.titleLabel.text = title;
+
+		[self.webView evaluateJavaScript:@"document.body==null" completionHandler:^(id _Nullable _isPDF, NSError * _Nullable error) {
+			if([_isPDF boolValue]){
+			   [CDVUserAgentUtil setUserAgent:_prevUserAgent lockToken:_userAgentLockToken];
+			}
+		}];
+    }];
+
     // Work around a bug where the first time a PDF is opened, all UIWebViews
     // reload their User-Agent from NSUserDefaults.
     // This work-around makes the following assumptions:
@@ -1243,14 +1273,8 @@ BOOL isExiting = FALSE;
     //    from it must pass through its white-list. This *does* break PDFs that
     //    contain links to other remote PDF/websites.
     // More info at https://issues.apache.org/jira/browse/CB-2225
-    BOOL isPDF = NO;
-    //TODO webview class
-    //BOOL isPDF = [@"true" isEqualToString :[theWebView evaluateJavaScript:@"document.body==null"]];
-    if (isPDF) {
-        [CDVUserAgentUtil setUserAgent:_prevUserAgent lockToken:_userAgentLockToken];
-    }
-    
-    [self.navigationDelegate didFinishNavigation:theWebView];
+
+   [self.navigationDelegate didFinishNavigation:theWebView];
 }
     
 - (void)webView:(WKWebView*)theWebView failedNavigation:(NSString*) delegateName withError:(nonnull NSError *)error{
