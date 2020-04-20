@@ -35,7 +35,7 @@
 
 #define    IAB_BRIDGE_NAME @"cordova_iab"
 
-#define    TOOLBAR_HEIGHT 44.0
+#define    TOOLBAR_HEIGHT 44.0 // 48 from styles https://app.asana.com/0/812993362141800/1168634759551193
 // #define    STATUSBAR_HEIGHT 20.0
 #define    LOCATIONBAR_HEIGHT 21.0
 #define    FOOTER_HEIGHT ((TOOLBAR_HEIGHT) + (LOCATIONBAR_HEIGHT))
@@ -884,8 +884,7 @@ BOOL isExiting = FALSE;
 //     self.forwardButton = [[UIBarButtonItem alloc] initWithTitle:frontArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goForward:)];
 
 	UIImage *forwardArrow = [self drawForwardArrow];
-    self.forwardButton = [[UIBarButtonItem alloc] initWithImage:forwardArrow style:UIBarButtonItemStylePlain target:self action:@selector(goForward:)];
-
+	self.forwardButton = [[UIBarButtonItem alloc] initWithImage:forwardArrow style:UIBarButtonItemStylePlain target:self action:@selector(goForward:)];
     self.forwardButton.enabled = YES;
     self.forwardButton.imageInsets = UIEdgeInsetsZero;
     if (_browserOptions.navigationbuttoncolor != nil) { // Set button color if user sets it in options
@@ -894,9 +893,8 @@ BOOL isExiting = FALSE;
 
 //     NSString* backArrowString = NSLocalizedString(@"◄", nil); // create arrow from Unicode char
 //     self.backButton = [[UIBarButtonItem alloc] initWithTitle:backArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
-	UIImage *backArrow = [self drawBackArrow];
-	self.backButton = [[UIBarButtonItem alloc] initWithImage:backArrow  style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
-
+  	UIImage *backArrow = [self drawBackArrow];
+  	self.backButton = [[UIBarButtonItem alloc] initWithImage:backArrow  style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
     self.backButton.enabled = YES;
     self.backButton.imageInsets = UIEdgeInsetsZero;
     if (_browserOptions.navigationbuttoncolor != nil) { // Set button color if user sets it in options
@@ -916,8 +914,31 @@ BOOL isExiting = FALSE;
         [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
     }
 
+    // Arramge toolbar buttons with respect to user configuration.
+	CGFloat leftWidth = 0;
+	CGFloat rightWidth = 0;
 
+	 if (self.closeButton) {
+		CGFloat width = self.closeButton.width;
+		if (_browserOptions.lefttoright) {
+			rightWidth += width;
+		} else {
+			leftWidth += width;
+		}
 
+	 }
+
+	 if (self.backButton) {
+	 	CGFloat width = self.backButton.width;
+		 leftWidth += width;
+	 }
+
+	 if (self.forwardButton) {
+	 	CGFloat width = self.forwardButton.width;
+	 	leftWidth += width;
+	 }
+
+		self.titleOffset = fmaxf(leftWidth, rightWidth);
     // The correct positioning of title is not that important right now, since
         // rePositionViews will take care of it a bit later.
         self.titleLabel = nil;
@@ -953,10 +974,9 @@ BOOL isExiting = FALSE;
     // but, if you want to set this yourself, knock yourself out (we can't set the title for a system Done button, so we have to create a new one)
     self.closeButton = nil;
     // Initialize with title if title is set, otherwise the title will be 'Done' localized
-    // self.closeButton = title != nil ? [[UIBarButtonItem alloc] initWithTitle:title style:UIBarButtonItemStyleBordered target:self action:@selector(close)] : [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(close)];
-    self.closeButton = title != nil ? [[UIBarButtonItem alloc] initWithTitle:title style:UIBarButtonItemStyleBordered target:self action:@selector(close)] : [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemStop target:self action:@selector(close)];
-
-    self.closeButton.enabled = YES;
+  // self.closeButton = title != nil ? [[UIBarButtonItem alloc] initWithTitle:title style:UIBarButtonItemStyleBordered target:self action:@selector(close)] : [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(close)];
+      self.closeButton = title != nil ? [[UIBarButtonItem alloc] initWithTitle:title style:UIBarButtonItemStyleBordered target:self action:@selector(close)] : [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemStop target:self action:@selector(close)];
+		self.closeButton.enabled = YES;
     // If color on closebutton is requested then initialize with that that color, otherwise use initialize with default
     self.closeButton.tintColor = colorString != nil ? [self colorFromHexString:colorString] : [UIColor colorWithRed:60.0 / 255.0 green:136.0 / 255.0 blue:230.0 / 255.0 alpha:1];
 
@@ -1190,11 +1210,12 @@ BOOL isExiting = FALSE;
         [self.toolbar setFrame:CGRectMake(self.toolbar.frame.origin.x, [self getStatusBarOffset], self.toolbar.frame.size.width, self.toolbar.frame.size.height)];
     }
 
-    // CK add https://github.com/apache/cordova-plugin-inappbrowser/issues/301
-//         if ((_browserOptions.toolbar) && ([_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop])) {
-//             [self.webView setFrame:CGRectMake(self.webView.frame.origin.x, TOOLBAR_HEIGHT + [self getStatusBarOffset], self.webView.frame.size.width, self.webView.frame.size.height)];
-//             [self.toolbar setFrame:CGRectMake(self.toolbar.frame.origin.x, [self getStatusBarOffset], self.toolbar.frame.size.width, self.toolbar.frame.size.height)];
-//         }
+    CGFloat screenWidth = CGRectGetWidth(self.webView.frame);
+	NSInteger width = floorf(screenWidth - self.titleOffset * 2.0f);
+	if (self.titleLabel) {
+		self.titleLabel.frame = CGRectMake(floorf((screenWidth - width) / 2.0f), 0, width, TOOLBAR_HEIGHT);
+	}
+
 }
 
 // Helper function to convert hex color string to UIColor
