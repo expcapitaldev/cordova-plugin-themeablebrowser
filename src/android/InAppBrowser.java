@@ -37,6 +37,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -60,6 +61,7 @@ import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -122,6 +124,7 @@ public class InAppBrowser extends CordovaPlugin {
 
     private InAppBrowserDialog dialog;
     private WebView inAppWebView;
+    private TextView title;
     private EditText edittext;
     private CallbackContext callbackContext;
     private boolean showLocationBar = true;
@@ -149,6 +152,12 @@ public class InAppBrowser extends CordovaPlugin {
     private String beforeload = "";
     private String[] allowedSchemes;
     private InAppBrowserClient currentClient;
+
+    private RelativeLayout toolbar;
+
+    private int actionButtonContainerViewId;
+    private int closeButtonViewId;
+    private int titleViewId;
 
     /**
      * Executes the request and returns PluginResult.
@@ -803,10 +812,10 @@ public class InAppBrowser extends CordovaPlugin {
                 main.setOrientation(LinearLayout.VERTICAL);
 
                 // Toolbar layout
-                RelativeLayout toolbar = new RelativeLayout(cordova.getActivity());
+                toolbar = new RelativeLayout(cordova.getActivity());
                 //Please, no more black!
                 toolbar.setBackgroundColor(toolbarColor);
-                toolbar.setLayoutParams(new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, this.dpToPixels(44)));
+                toolbar.setLayoutParams(new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, this.dpToPixels(48))); // 48 size from design
                 toolbar.setPadding(this.dpToPixels(2), this.dpToPixels(2), this.dpToPixels(2), this.dpToPixels(2));
                 if (leftToRight) {
                     toolbar.setHorizontalGravity(Gravity.LEFT);
@@ -823,7 +832,10 @@ public class InAppBrowser extends CordovaPlugin {
                 actionButtonContainer.setLayoutParams(actionButtonLayoutParams);
                 actionButtonContainer.setHorizontalGravity(Gravity.LEFT);
                 actionButtonContainer.setVerticalGravity(Gravity.CENTER_VERTICAL);
-                actionButtonContainer.setId(leftToRight ? Integer.valueOf(5) : Integer.valueOf(1));
+
+                int containerId = leftToRight ? Integer.valueOf(5) : Integer.valueOf(1);
+                actionButtonContainer.setId(containerId);
+                actionButtonContainerViewId = containerId;
 
                 // Back button
                 ImageButton back = new ImageButton(cordova.getActivity());
@@ -905,6 +917,7 @@ public class InAppBrowser extends CordovaPlugin {
                 // Header Close/Done button
                 int closeButtonId = leftToRight ? 1 : 5;
                 View close = createCloseButton(closeButtonId);
+                closeButtonViewId = Integer.valueOf(closeButtonId);
                 toolbar.addView(close);
 
                 // Footer
@@ -925,6 +938,22 @@ public class InAppBrowser extends CordovaPlugin {
 
                 View footerClose = createCloseButton(7);
                 footer.addView(footerClose);
+
+
+                // Title
+                title = new TextView(cordova.getActivity());
+                FrameLayout.LayoutParams titleParams
+                        = new FrameLayout.LayoutParams(
+                        LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+                titleParams.gravity = Gravity.CENTER;
+                title.setLayoutParams(titleParams);
+                title.setSingleLine();
+                title.setEllipsize(TextUtils.TruncateAt.END);
+                title.setGravity(Gravity.CENTER);
+                title.setTextColor(hexStringToColor("#000000ff"));
+                int titleId = Integer.valueOf(8);
+                title.setId(titleId);
+                titleViewId = titleId;
 
 
                 // WebView
@@ -1083,6 +1112,30 @@ public class InAppBrowser extends CordovaPlugin {
         };
         this.cordova.getActivity().runOnUiThread(runnable);
         return "";
+    }
+
+    private int hexStringToColor(String hex) {
+        int result = 0;
+
+        if (hex != null && !hex.isEmpty()) {
+            if (hex.charAt(0) == '#') {
+                hex = hex.substring(1);
+            }
+
+            // No alpha, that's fine, we will just attach ff.
+            if (hex.length() < 8) {
+                hex += "ff";
+            }
+
+            result = (int) Long.parseLong(hex, 16);
+
+            // Almost done, but Android color code is in form of ARGB instead of
+            // RGBA, so we gotta shift it a bit.
+            int alpha = (result & 0xff) << 24;
+            result = result >> 8 & 0xffffff | alpha;
+        }
+
+        return result;
     }
 
     /**
@@ -1415,6 +1468,26 @@ public class InAppBrowser extends CordovaPlugin {
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
 
+            if (inAppWebView != null && title != null) {
+
+                View leftContainerView = toolbar.findViewById(actionButtonContainerViewId);
+                View rightContainerView = toolbar.findViewById(closeButtonViewId);
+
+                if (toolbar.findViewById(titleViewId) == null && leftContainerView != null && rightContainerView != null) { //  toolbar.addView(title); must be triggered once
+
+                    int leftContainerWidth = leftContainerView.getWidth();
+                    int rightContainerWidth = rightContainerView.getWidth();
+                    int titleMargin = Math.max(
+                            leftContainerWidth, rightContainerWidth);
+
+                    FrameLayout.LayoutParams titleParams2
+                            = (FrameLayout.LayoutParams) title.getLayoutParams();
+                    titleParams2.setMargins(titleMargin, 0, titleMargin, 0);
+                    toolbar.addView(title);
+                }
+
+                title.setText(inAppWebView.getTitle());
+            }
             // Set the namespace for postMessage()
             if (Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
                 injectDeferredObject("window.webkit={messageHandlers:{cordova_iab:cordova_iab}}", null);
