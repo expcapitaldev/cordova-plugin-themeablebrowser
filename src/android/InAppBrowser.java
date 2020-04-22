@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Typeface;
 import android.os.Parcelable;
 import android.provider.Browser;
 import android.content.res.Resources;
@@ -61,7 +62,6 @@ import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -110,6 +110,7 @@ public class InAppBrowser extends CordovaPlugin {
     private static final Boolean DEFAULT_HARDWARE_BACK = true;
     private static final String USER_WIDE_VIEW_PORT = "useWideViewPort";
     private static final String TOOLBAR_COLOR = "toolbarcolor";
+    private static final String TITLE_COLOR = "titlecolor";
     private static final String CLOSE_BUTTON_CAPTION = "closebuttoncaption";
     private static final String CLOSE_BUTTON_COLOR = "closebuttoncolor";
     private static final String LEFT_TO_RIGHT = "lefttoright";
@@ -120,7 +121,7 @@ public class InAppBrowser extends CordovaPlugin {
     private static final String FOOTER_COLOR = "footercolor";
     private static final String BEFORELOAD = "beforeload";
 
-    private static final List customizableOptions = Arrays.asList(CLOSE_BUTTON_CAPTION, TOOLBAR_COLOR, NAVIGATION_COLOR, CLOSE_BUTTON_COLOR, FOOTER_COLOR);
+    private static final List customizableOptions = Arrays.asList(CLOSE_BUTTON_CAPTION, TOOLBAR_COLOR, NAVIGATION_COLOR, CLOSE_BUTTON_COLOR, FOOTER_COLOR, TITLE_COLOR);
 
     private InAppBrowserDialog dialog;
     private WebView inAppWebView;
@@ -144,6 +145,7 @@ public class InAppBrowser extends CordovaPlugin {
     private String closeButtonColor = "";
     private boolean leftToRight = false;
     private int toolbarColor = android.graphics.Color.LTGRAY;
+    private int titleColor = android.graphics.Color.LTGRAY;
     private boolean hideNavigationButtons = false;
     private String navigationButtonColor = "";
     private boolean hideUrlBar = false;
@@ -159,6 +161,8 @@ public class InAppBrowser extends CordovaPlugin {
     private int closeButtonViewId;
     private int titleViewId;
 
+    private ImageButton forward;
+    private ImageButton back;
     /**
      * Executes the request and returns PluginResult.
      *
@@ -708,6 +712,10 @@ public class InAppBrowser extends CordovaPlugin {
             if (toolbarColorSet != null) {
                 toolbarColor = android.graphics.Color.parseColor(toolbarColorSet);
             }
+            String titleColorSet = features.get(TITLE_COLOR);
+            if (titleColorSet != null) {
+                titleColor = android.graphics.Color.parseColor(titleColorSet);
+            }
             String navigationButtonColorSet = features.get(NAVIGATION_COLOR);
             if (navigationButtonColorSet != null) {
                 navigationButtonColor = navigationButtonColorSet;
@@ -838,7 +846,7 @@ public class InAppBrowser extends CordovaPlugin {
                 actionButtonContainerViewId = containerId;
 
                 // Back button
-                ImageButton back = new ImageButton(cordova.getActivity());
+                back = new ImageButton(cordova.getActivity());
                 RelativeLayout.LayoutParams backLayoutParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
                 backLayoutParams.addRule(RelativeLayout.ALIGN_LEFT);
                 back.setLayoutParams(backLayoutParams);
@@ -854,7 +862,9 @@ public class InAppBrowser extends CordovaPlugin {
                     back.setBackgroundDrawable(null);
                 back.setImageDrawable(backIcon);
                 back.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                back.setPadding(0, this.dpToPixels(10), 0, this.dpToPixels(10));
+                back.setPadding(this.dpToPixels(10), this.dpToPixels(10), this.dpToPixels(5), this.dpToPixels(10));
+                back.setImageAlpha(51); // 20% 255/4=51
+
                 if (Build.VERSION.SDK_INT >= 16)
                     back.getAdjustViewBounds();
 
@@ -865,7 +875,7 @@ public class InAppBrowser extends CordovaPlugin {
                 });
 
                 // Forward button
-                ImageButton forward = new ImageButton(cordova.getActivity());
+                forward = new ImageButton(cordova.getActivity());
                 RelativeLayout.LayoutParams forwardLayoutParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
                 forwardLayoutParams.addRule(RelativeLayout.RIGHT_OF, 2);
                 forward.setLayoutParams(forwardLayoutParams);
@@ -880,7 +890,8 @@ public class InAppBrowser extends CordovaPlugin {
                     forward.setBackgroundDrawable(null);
                 forward.setImageDrawable(fwdIcon);
                 forward.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                forward.setPadding(0, this.dpToPixels(10), 0, this.dpToPixels(10));
+                forward.setPadding(this.dpToPixels(5), this.dpToPixels(10), this.dpToPixels(10), this.dpToPixels(10));
+                forward.setImageAlpha(51); // 20% 255/4=51
                 if (Build.VERSION.SDK_INT >= 16)
                     forward.getAdjustViewBounds();
 
@@ -942,18 +953,19 @@ public class InAppBrowser extends CordovaPlugin {
 
                 // Title
                 title = new TextView(cordova.getActivity());
-                FrameLayout.LayoutParams titleParams
-                        = new FrameLayout.LayoutParams(
-                        LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-                titleParams.gravity = Gravity.CENTER;
+                RelativeLayout.LayoutParams titleParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+               // titleParams.gravity = Gravity.CENTER;
                 title.setLayoutParams(titleParams);
                 title.setSingleLine();
                 title.setEllipsize(TextUtils.TruncateAt.END);
                 title.setGravity(Gravity.CENTER);
-                title.setTextColor(hexStringToColor("#000000ff"));
+                title.setTextColor(titleColor);
+                title.setTypeface(Typeface.DEFAULT_BOLD);
+                title.setTextSize(16);
                 int titleId = Integer.valueOf(8);
                 title.setId(titleId);
                 titleViewId = titleId;
+                // title.setBackgroundColor(Color.parseColor("#ff0000")); // debug width
 
 
                 // WebView
@@ -1465,28 +1477,65 @@ public class InAppBrowser extends CordovaPlugin {
             }
         }
 
-        public void onPageFinished(WebView view, String url) {
+        private int dpToPixels(int dipValue) {
+            int value = (int) TypedValue.applyDimension( TypedValue.COMPLEX_UNIT_DIP,
+                    (float) dipValue,
+                    cordova.getActivity().getResources().getDisplayMetrics()
+            );
+
+            return value;
+        }
+
+        public void onPageFinished(WebView view, String url) { // triggered many times
             super.onPageFinished(view, url);
 
-            if (inAppWebView != null && title != null) {
+            if (inAppWebView != null) {
 
-                View leftContainerView = toolbar.findViewById(actionButtonContainerViewId);
-                View rightContainerView = toolbar.findViewById(closeButtonViewId);
+                if (title != null && toolbar != null) {
 
-                if (toolbar.findViewById(titleViewId) == null && leftContainerView != null && rightContainerView != null) { //  toolbar.addView(title); must be triggered once
+                    View leftContainerView = toolbar.findViewById(actionButtonContainerViewId);
+                    View rightContainerView = toolbar.findViewById(closeButtonViewId);
 
-                    int leftContainerWidth = leftContainerView.getWidth();
-                    int rightContainerWidth = rightContainerView.getWidth();
-                    int titleMargin = Math.max(
-                            leftContainerWidth, rightContainerWidth);
+                    if (toolbar.findViewById(titleViewId) == null && leftContainerView != null && rightContainerView != null) {
 
-                    FrameLayout.LayoutParams titleParams2
-                            = (FrameLayout.LayoutParams) title.getLayoutParams();
-                    titleParams2.setMargins(titleMargin, 0, titleMargin, 0);
-                    toolbar.addView(title);
+                        int leftContainerWidth = leftContainerView.getWidth();
+                        int rightContainerWidth = rightContainerView.getWidth();
+                        //  int titleMargin = Math.max(leftContainerWidth, rightContainerWidth);
+
+
+                        RelativeLayout.LayoutParams titleParamsMargin = (RelativeLayout.LayoutParams) title.getLayoutParams();
+                        titleParamsMargin.setMargins(leftContainerWidth, 0, rightContainerWidth, 0);
+                        toolbar.addView(title);
+                    }
+
+//                if (title.getText() == null || (title.getText() != null && title.getText().length() == 0)) {
+//                    title.setText(inAppWebView.getTitle());
+//                }
+
+                    title.setText(inAppWebView.getTitle());
                 }
 
-                title.setText(inAppWebView.getTitle());
+                if (forward != null ) {
+                    if (inAppWebView.canGoForward()) {
+                      //  LOG.d(LOG_TAG, "canGoForward");
+                        forward.setImageAlpha(255);
+                    } else {
+                       // LOG.d(LOG_TAG, "!canGoForward");
+                        forward.setImageAlpha(51); // 20% 255/4=51
+                    }
+                }
+
+                if (back != null) {
+                    if (inAppWebView.canGoBack()) {
+                        // LOG.d(LOG_TAG, "canGoBack");
+                        back.setImageAlpha(255);
+                    } else {
+                       //  LOG.d(LOG_TAG, "!canGoBack");
+                        back.setImageAlpha(51); // 20% 255/4=51
+                    }
+                }
+
+
             }
             // Set the namespace for postMessage()
             if (Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
