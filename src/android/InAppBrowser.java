@@ -113,6 +113,7 @@ public class InAppBrowser extends CordovaPlugin {
     private static final String TITLE_COLOR = "titlecolor";
     private static final String CLOSE_BUTTON_CAPTION = "closebuttoncaption";
     private static final String CLOSE_BUTTON_COLOR = "closebuttoncolor";
+    private static final String ICON_BUTTON_COLOR = "iconbuttoncolor";
     private static final String LEFT_TO_RIGHT = "lefttoright";
     private static final String HIDE_NAVIGATION = "hidenavigationbuttons";
     private static final String NAVIGATION_COLOR = "navigationbuttoncolor";
@@ -121,7 +122,7 @@ public class InAppBrowser extends CordovaPlugin {
     private static final String FOOTER_COLOR = "footercolor";
     private static final String BEFORELOAD = "beforeload";
 
-    private static final List customizableOptions = Arrays.asList(CLOSE_BUTTON_CAPTION, TOOLBAR_COLOR, NAVIGATION_COLOR, CLOSE_BUTTON_COLOR, FOOTER_COLOR, TITLE_COLOR);
+    private static final List customizableOptions = Arrays.asList(CLOSE_BUTTON_CAPTION, TOOLBAR_COLOR, NAVIGATION_COLOR, CLOSE_BUTTON_COLOR, FOOTER_COLOR, TITLE_COLOR, ICON_BUTTON_COLOR);
 
     private InAppBrowserDialog dialog;
     private WebView inAppWebView;
@@ -141,11 +142,13 @@ public class InAppBrowser extends CordovaPlugin {
     private ValueCallback<Uri[]> mUploadCallbackLollipop;
     private final static int FILECHOOSER_REQUESTCODE = 1;
     private final static int FILECHOOSER_REQUESTCODE_LOLLIPOP = 2;
+    private final static int TOOLBAR_HEIGHT = 48;
     private String closeButtonCaption = "";
     private String closeButtonColor = "";
     private boolean leftToRight = false;
     private int toolbarColor = android.graphics.Color.LTGRAY;
     private int titleColor = android.graphics.Color.LTGRAY;
+    private IconButtonColorEnum iconButtonColor = IconButtonColorEnum.GOLD; // default value
     private boolean hideNavigationButtons = false;
     private String navigationButtonColor = "";
     private boolean hideUrlBar = false;
@@ -155,6 +158,35 @@ public class InAppBrowser extends CordovaPlugin {
     private String[] allowedSchemes;
     private InAppBrowserClient currentClient;
 
+    public enum IconButtonColorEnum {
+        GOLD("gold"), WHITE("white");
+        IconButtonColorEnum(String v) {
+            value = v;
+        }
+
+        private String value;
+
+        public String getValue() {
+            return value;
+        }
+
+        public static boolean contains(String test) {
+
+            if (test == null) {
+                return false;
+            }
+
+            for (IconButtonColorEnum value : IconButtonColorEnum.values()) {
+                if (value.name().equals(test)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+    }
+
     private RelativeLayout toolbar;
 
     private int actionButtonContainerViewId;
@@ -163,6 +195,23 @@ public class InAppBrowser extends CordovaPlugin {
 
     private ImageButton forward;
     private ImageButton back;
+
+    private static String backButtonResourceBasicIdentifier = "ic_action_previous_item_";
+    private static String forwardButtonResourceBasicIdentifier = "ic_action_next_item_";
+    private static String closeButtonResourceBasicIdentifier = "ic_action_remove_";
+
+    private String getForwardButtonResourceIdentifier() {
+        return forwardButtonResourceBasicIdentifier + iconButtonColor.getValue();
+    }
+
+    private String getBackButtonResourceIdentifier() {
+        return backButtonResourceBasicIdentifier + iconButtonColor.getValue();
+    }
+
+    private String getCloseButtonResourceIdentifier() {
+        return closeButtonResourceBasicIdentifier + iconButtonColor.getValue();
+    }
+
     /**
      * Executes the request and returns PluginResult.
      *
@@ -716,6 +765,13 @@ public class InAppBrowser extends CordovaPlugin {
             if (titleColorSet != null) {
                 titleColor = android.graphics.Color.parseColor(titleColorSet);
             }
+            String iconButtonColorSet = features.get(ICON_BUTTON_COLOR);
+            if (iconButtonColorSet != null) {
+                iconButtonColorSet = iconButtonColorSet.toUpperCase();
+                if (IconButtonColorEnum.contains(iconButtonColorSet)) {
+                    iconButtonColor = Enum.valueOf(IconButtonColorEnum.class, iconButtonColorSet);
+                }
+            }
             String navigationButtonColorSet = features.get(NAVIGATION_COLOR);
             if (navigationButtonColorSet != null) {
                 navigationButtonColor = navigationButtonColorSet;
@@ -767,7 +823,7 @@ public class InAppBrowser extends CordovaPlugin {
                 }
                 else {
                     ImageButton close = new ImageButton(cordova.getActivity());
-                    int closeResId = activityRes.getIdentifier("ic_action_remove", "drawable", cordova.getActivity().getPackageName());
+                    int closeResId = activityRes.getIdentifier(getCloseButtonResourceIdentifier(), "drawable", cordova.getActivity().getPackageName());
                     Drawable closeIcon = activityRes.getDrawable(closeResId);
                     if (closeButtonColor != "") close.setColorFilter(android.graphics.Color.parseColor(closeButtonColor));
                     close.setImageDrawable(closeIcon);
@@ -823,7 +879,7 @@ public class InAppBrowser extends CordovaPlugin {
                 toolbar = new RelativeLayout(cordova.getActivity());
                 //Please, no more black!
                 toolbar.setBackgroundColor(toolbarColor);
-                toolbar.setLayoutParams(new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, this.dpToPixels(48))); // 48 size from design
+                toolbar.setLayoutParams(new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, this.dpToPixels(TOOLBAR_HEIGHT)));
                 toolbar.setPadding(this.dpToPixels(2), this.dpToPixels(2), this.dpToPixels(2), this.dpToPixels(2));
                 if (leftToRight) {
                     toolbar.setHorizontalGravity(Gravity.LEFT);
@@ -853,7 +909,7 @@ public class InAppBrowser extends CordovaPlugin {
                 back.setContentDescription("Back Button");
                 back.setId(Integer.valueOf(2));
                 Resources activityRes = cordova.getActivity().getResources();
-                int backResId = activityRes.getIdentifier("ic_action_previous_item", "drawable", cordova.getActivity().getPackageName());
+                int backResId = activityRes.getIdentifier(getBackButtonResourceIdentifier(), "drawable", cordova.getActivity().getPackageName());
                 Drawable backIcon = activityRes.getDrawable(backResId);
                 if (navigationButtonColor != "") back.setColorFilter(android.graphics.Color.parseColor(navigationButtonColor));
                 if (Build.VERSION.SDK_INT >= 16)
@@ -881,7 +937,7 @@ public class InAppBrowser extends CordovaPlugin {
                 forward.setLayoutParams(forwardLayoutParams);
                 forward.setContentDescription("Forward Button");
                 forward.setId(Integer.valueOf(3));
-                int fwdResId = activityRes.getIdentifier("ic_action_next_item", "drawable", cordova.getActivity().getPackageName());
+                int fwdResId = activityRes.getIdentifier(getForwardButtonResourceIdentifier(), "drawable", cordova.getActivity().getPackageName());
                 Drawable fwdIcon = activityRes.getDrawable(fwdResId);
                 if (navigationButtonColor != "") forward.setColorFilter(android.graphics.Color.parseColor(navigationButtonColor));
                 if (Build.VERSION.SDK_INT >= 16)
